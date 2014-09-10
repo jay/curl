@@ -220,6 +220,9 @@
 /* Define to 1 if you have the `getrlimit' function. */
 #cmakedefine HAVE_GETRLIMIT 1
 
+/* Define to 1 if you have the getservbyname function. */
+#cmakedefine HAVE_GETSERVBYNAME 1
+
 /* Define to 1 if you have the getservbyport_r function. */
 #cmakedefine HAVE_GETSERVBYPORT_R 1
 
@@ -512,6 +515,9 @@
 /* Define to 1 if you have a working setsockopt SO_NONBLOCK function. */
 #cmakedefine HAVE_SETSOCKOPT_SO_NONBLOCK 1
 
+/* Define to 1 if you have the setvbuf function. */
+#cmakedefine HAVE_SETVBUF 1
+
 /* Define to 1 if you have the <sgtty.h> header file. */
 #cmakedefine HAVE_SGTTY_H 1
 
@@ -574,6 +580,9 @@
 
 /* Define to 1 if you have the strerror_r function. */
 #cmakedefine HAVE_STRERROR_R 1
+
+/* Define to 1 if you have the strftime function. */
+#cmakedefine HAVE_STRFTIME 1
 
 /* Define to 1 if you have the stricmp function. */
 #cmakedefine HAVE_STRICMP 1
@@ -906,6 +915,9 @@
 /* if SSL is enabled */
 #cmakedefine USE_SSLEAY 1
 
+/* if use windows threads */
+#cmakedefine USE_THREADS_WIN32 1
+
 /* Define to 1 if you are building a Windows target without large file
    support. */
 #cmakedefine USE_WIN32_LARGE_FILES 1
@@ -953,3 +965,11 @@
 
 /* the signed version of size_t */
 #cmakedefine ssize_t ${ssize_t}
+
+#if defined(HAVE_WINSOCK2_H) && defined(_WIN32_WINNT) && (_WIN32_WINNT >= 0x0600)
+#define HAVE_STRUCT_POLLFD 1
+#endif
+
+#if defined(USE_ARES) && defined(USE_THREADS_WIN32)
+#  error "Only one DNS lookup specialty may be defined at most"
+#endif
