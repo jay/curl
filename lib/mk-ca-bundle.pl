@@ -37,6 +37,12 @@ use strict;
 use vars qw($opt_b $opt_d $opt_f $opt_h $opt_i $opt_l $opt_n $opt_p $opt_q $opt_s $opt_t $opt_u $opt_v $opt_w);
 use List::Util;
 use Text::Wrap;
+my $MOD_SHA = "Digest::SHA";
+eval "require $MOD_SHA";
+if ($@) {
+  $MOD_SHA = "Digest::SHA::PurePerl";
+  eval "require $MOD_SHA";
+}
 
 my %urls = (
   'nss' =>
@@ -56,7 +62,7 @@ $opt_d = 'release';
 # If the OpenSSL commandline is not in search path you can configure it here!
 my $openssl = 'openssl';
 
-my $version = '1.23';
+my $version = '1.25';
 
 $opt_w = 76; # default base64 encoded lines length
 
@@ -97,6 +103,7 @@ my @valid_signature_algorithms = (
   "MD5",
   "SHA1",
   "SHA256",
+  "SHA384",
   "SHA512"
 );
 
@@ -116,13 +123,15 @@ my $curl=`curl -V`;
 
 if ($opt_i) {
   print ("=" x 78 . "\n");
-  print "Script Version            : $version\n";
-  print "Perl Version              : $]\n";
-  print "Operating System Name     : $^O\n";
-  print "Getopt::Std.pm Version    : ${Getopt::Std::VERSION}\n";
-  print "MIME::Base64.pm Version   : ${MIME::Base64::VERSION}\n";
-  print "LWP::UserAgent.pm Version : ${LWP::UserAgent::VERSION}\n";
-  print "LWP.pm Version            : ${LWP::VERSION}\n";
+  print "Script Version                   : $version\n";
+  print "Perl Version                     : $]\n";
+  print "Operating System Name            : $^O\n";
+  print "Getopt::Std.pm Version           : ${Getopt::Std::VERSION}\n";
+  print "MIME::Base64.pm Version          : ${MIME::Base64::VERSION}\n";
+  print "LWP::UserAgent.pm Version        : ${LWP::UserAgent::VERSION}\n";
+  print "LWP.pm Version                   : ${LWP::VERSION}\n";
+  print "Digest::SHA.pm Version           : ${Digest::SHA::VERSION}\n" if ($Digest::SHA::VERSION);
+  print "Digest::SHA::PurePerl.pm Version : ${Digest::SHA::PurePerl::VERSION}\n" if ($Digest::SHA::PurePerl::VERSION);
   print ("=" x 78 . "\n");
 }
 
@@ -210,25 +219,32 @@ sub PARSE_CSV_PARAM($$@) {
 }
 
 sub sha1 {
-    my ($txt)=@_;
-    my $sha1 = `$openssl dgst -sha1 $txt | cut '-d ' -f2`;
-    chomp $sha1;
-    return $sha1;
+  my $result;
+  if ($Digest::SHA::VERSION || $Digest::SHA::PurePerl::VERSION) {
+    open(FILE, $_[0]) or die "Can't open '$_[0]': $!";
+    binmode(FILE);
+    $result = $MOD_SHA->new(1)->addfile(*FILE)->hexdigest;
+    close(FILE);
+  } else {
+    # Use OpenSSL command if Perl Digest::SHA modules not available
+    $result = (split(/ |\r|\n/,`$openssl dgst -sha1 $_[0]`))[1];
+  }
+  return $result;
 }
 
+
 sub oldsha1 {
-    my ($crt)=@_;
-    my $sha1="";
-    open(C, "<$crt") || return 0;
-    while(<C>) {
-        chomp;
-        if($_ =~ /^\#\# SHA1: (.*)/) {
-            $sha1 = $1;
-            last;
-        }
+  my $sha1 = "";
+  open(C, "<$_[0]") || return 0;
+  while(<C>) {
+    chomp;
+    if($_ =~ /^\#\# SHA1: (.*)/) {
+      $sha1 = $1;
+      last;
     }
-    close(C);
-    return $sha1;
+  }
+  close(C);
+  return $sha1;
 }
 
 if ( $opt_p !~ m/:/ ) {
@@ -260,31 +276,23 @@ my $stdout = $crt eq '-';
 my $resp;
 my $fetched;
 
-my $oldsha1= oldsha1($crt);
+my $oldsha1 = oldsha1($crt);
 
 print STDERR "SHA1 of old file: $oldsha1\n" if (!$opt_q);
 
 print STDERR "Downloading '$txt' ...\n" if (!$opt_q);
 
 if($curl && !$opt_n) {
-    my $https = $url;
-    $https =~ s/^http:/https:/;
-    printf "Get certdata over HTTPS with curl!\n", $https;
-    my $quiet = $opt_q?"-s":"";
-    my @out = `curl -w %{response_code} $quiet -O $https`;
-
-    my $code = 0;
-    if(@out) {
-        $code = $out[0];
-    }
-
-    if($code == 200) {
-        $fetched = 1;
-    }
-    else {
-        print STDERR "Failed downloading HTTPS with curl, trying HTTP with LWP\n"
-            unless $opt_q;
-    }
+  my $https = $url;
+  $https =~ s/^http:/https:/;
+  print STDERR "Get certdata over HTTPS with curl!\n" if (!$opt_q);
+  my $quiet = $opt_q ? "-s" : "";
+  my @out = `curl -w %{response_code} $quiet -O $https`;
+  if(@out && $out[0] == 200) {
+    $fetched = 1;
+  } else {
+    print STDERR "Failed downloading HTTPS with curl, trying HTTP with LWP\n" if (!$opt_q);
+  }
 }
 
 unless ($fetched || ($opt_n and -e $txt)) {

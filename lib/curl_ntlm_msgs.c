@@ -292,18 +292,13 @@ CURLcode Curl_ntlm_decode_type2_message(struct SessionHandle *data,
     return error;
 
   if(!buffer) {
-    infof(data, "NTLM handshake failure (unhandled condition)\n");
-    return CURLE_REMOTE_ACCESS_DENIED;
+    infof(data, "NTLM handshake failure (empty type-2 message)\n");
+    return CURLE_BAD_CONTENT_ENCODING;
   }
 
 #ifdef USE_WINDOWS_SSPI
-  ntlm->type_2 = malloc(size + 1);
-  if(ntlm->type_2 == NULL) {
-    free(buffer);
-    return CURLE_OUT_OF_MEMORY;
-  }
+  ntlm->type_2 = buffer;
   ntlm->n_type_2 = curlx_uztoul(size);
-  memcpy(ntlm->type_2, buffer, size);
 #else
   ntlm->flags = 0;
 
@@ -313,7 +308,7 @@ CURLcode Curl_ntlm_decode_type2_message(struct SessionHandle *data,
     /* This was not a good enough type-2 message */
     free(buffer);
     infof(data, "NTLM handshake failure (bad type-2 message)\n");
-    return CURLE_REMOTE_ACCESS_DENIED;
+    return CURLE_BAD_CONTENT_ENCODING;
   }
 
   ntlm->flags = readint_le(&buffer[20]);
@@ -336,8 +331,9 @@ CURLcode Curl_ntlm_decode_type2_message(struct SessionHandle *data,
     fprintf(stderr, "\n****\n");
     fprintf(stderr, "**** Header %s\n ", header);
   });
-#endif
+
   free(buffer);
+#endif
 
   return CURLE_OK;
 }

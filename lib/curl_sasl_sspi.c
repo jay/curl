@@ -147,7 +147,7 @@ CURLcode Curl_sasl_create_digest_md5_message(struct SessionHandle *data,
   if(!chlg)
     return CURLE_BAD_CONTENT_ENCODING;
 
-  /* Ensure we have some login credientials as DigestSSP cannot use the current
+  /* Ensure we have some login credentials as DigestSSP cannot use the current
      Windows user like NTLMSSP can */
   if(!userp || !*userp) {
     Curl_safefree(chlg);
@@ -195,7 +195,7 @@ CURLcode Curl_sasl_create_digest_md5_message(struct SessionHandle *data,
     return result;
   }
 
-  /* Acquire our credientials handle */
+  /* Acquire our credentials handle */
   status = s_pSecFn->AcquireCredentialsHandle(NULL,
                                               (TCHAR *) TEXT("WDigest"),
                                               SECPKG_CRED_OUTBOUND, NULL,
@@ -328,6 +328,11 @@ CURLcode Curl_sasl_create_gssapi_user_message(struct SessionHandle *data,
     /* Release the package buffer as it is not required anymore */
     s_pSecFn->FreeContextBuffer(SecurityPackage);
 
+    /* Allocate our response buffer */
+    krb5->output_token = malloc(krb5->token_max);
+    if(!krb5->output_token)
+      return CURLE_OUT_OF_MEMORY;
+
     /* Generate our SPN */
     krb5->spn = Curl_sasl_build_spn(service, data->easy_conn->host.name);
     if(!krb5->spn)
@@ -341,11 +346,6 @@ CURLcode Curl_sasl_create_gssapi_user_message(struct SessionHandle *data,
 
       /* Allow proper cleanup of the identity structure */
       krb5->p_identity = &krb5->identity;
-
-      /* Allocate our response buffer */
-      krb5->output_token = malloc(krb5->token_max);
-      if(!krb5->output_token)
-        return CURLE_OUT_OF_MEMORY;
     }
     else
       /* Use the current Windows user */
@@ -358,7 +358,7 @@ CURLcode Curl_sasl_create_gssapi_user_message(struct SessionHandle *data,
 
     memset(krb5->credentials, 0, sizeof(CredHandle));
 
-    /* Acquire our credientials handle */
+    /* Acquire our credentials handle */
     status = s_pSecFn->AcquireCredentialsHandle(NULL,
                                                 (TCHAR *) TEXT("Kerberos"),
                                                 SECPKG_CRED_OUTBOUND, NULL,
@@ -676,14 +676,14 @@ CURLcode Curl_sasl_create_gssapi_security_message(struct SessionHandle *data,
 
 void Curl_sasl_gssapi_cleanup(struct kerberos5data *krb5)
 {
-  /* Free  the context */
+  /* Free our security context */
   if(krb5->context) {
     s_pSecFn->DeleteSecurityContext(krb5->context);
     free(krb5->context);
     krb5->context = NULL;
   }
 
-  /* Free the credientials handle */
+  /* Free our credentials handle */
   if(krb5->credentials) {
     s_pSecFn->FreeCredentialsHandle(krb5->credentials);
     free(krb5->credentials);
