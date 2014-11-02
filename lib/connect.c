@@ -541,7 +541,7 @@ static CURLcode trynextip(struct connectdata *conn,
                           int sockindex,
                           int tempindex)
 {
-  CURLcode rc = CURLE_COULDNT_CONNECT;
+  CURLcode result = CURLE_COULDNT_CONNECT;
 
   /* First clean up after the failed socket.
      Don't close it yet to ensure that the next IP's socket gets a different
@@ -575,11 +575,12 @@ static CURLcode trynextip(struct connectdata *conn,
         ai = ai->ai_next;
 
       if(ai) {
-        rc = singleipconnect(conn, ai, &conn->tempsock[tempindex]);
-        if(rc == CURLE_COULDNT_CONNECT) {
+        result = singleipconnect(conn, ai, &conn->tempsock[tempindex]);
+        if(result == CURLE_COULDNT_CONNECT) {
           ai = ai->ai_next;
           continue;
         }
+
         conn->tempaddr[tempindex] = ai;
       }
       break;
@@ -589,7 +590,7 @@ static CURLcode trynextip(struct connectdata *conn,
   if(fd_to_close != CURL_SOCKET_BAD)
     Curl_closesocket(conn, fd_to_close);
 
-  return rc;
+  return result;
 }
 
 /* Copies connection info into the session handle to make it available
@@ -977,10 +978,9 @@ void Curl_sndbufset(curl_socket_t sockfd)
  * singleipconnect() connects to the given IP only, and it may return without
  * having connected.
  */
-static CURLcode
-singleipconnect(struct connectdata *conn,
-                const Curl_addrinfo *ai,
-                curl_socket_t *sockp)
+static CURLcode singleipconnect(struct connectdata *conn,
+                                const Curl_addrinfo *ai,
+                                curl_socket_t *sockp)
 {
   struct Curl_sockaddr_ex addr;
   int rc;
@@ -988,14 +988,14 @@ singleipconnect(struct connectdata *conn,
   bool isconnected = FALSE;
   struct SessionHandle *data = conn->data;
   curl_socket_t sockfd;
-  CURLcode res;
+  CURLcode result;
   char ipaddress[MAX_IPADR_LEN];
   long port;
 
   *sockp = CURL_SOCKET_BAD;
 
-  res = Curl_socket(conn, ai, &addr, &sockfd);
-  if(res)
+  result = Curl_socket(conn, ai, &addr, &sockfd);
+  if(result)
     /* Failed to create the socket, but still return OK since we signal the
        lack of socket as well. This allows the parent function to keep looping
        over alternative addresses/socket families etc. */
@@ -1038,15 +1038,16 @@ singleipconnect(struct connectdata *conn,
   }
 
   /* possibly bind the local end to an IP, interface or port */
-  res = bindlocal(conn, sockfd, addr.family);
-  if(res) {
+  result = bindlocal(conn, sockfd, addr.family);
+  if(result) {
     Curl_closesocket(conn, sockfd); /* close socket and bail out */
-    if(res == CURLE_UNSUPPORTED_PROTOCOL) {
+    if(result == CURLE_UNSUPPORTED_PROTOCOL) {
       /* The address family is not supported on this interface.
          We can continue trying addresses */
       return CURLE_OK;
     }
-    return res;
+
+    return result;
   }
 
   /* set socket non-blocking */
@@ -1084,7 +1085,7 @@ singleipconnect(struct connectdata *conn,
     case EAGAIN:
 #endif
 #endif
-      res = CURLE_OK;
+      result = CURLE_OK;
       break;
 
     default:
@@ -1095,14 +1096,14 @@ singleipconnect(struct connectdata *conn,
 
       /* connect failed */
       Curl_closesocket(conn, sockfd);
-      res = CURLE_COULDNT_CONNECT;
+      result = CURLE_COULDNT_CONNECT;
     }
   }
 
-  if(!res)
+  if(!result)
     *sockp = sockfd;
 
-  return res;
+  return result;
 }
 
 /*

@@ -44,7 +44,9 @@
 /* The last #include file should be: */
 #include "memdebug.h"
 
+#if defined(USE_KRB5)
 void Curl_sasl_gssapi_cleanup(struct kerberos5data *krb5);
+#endif
 
 /*
  * Curl_sasl_build_spn()
@@ -128,13 +130,14 @@ CURLcode Curl_sasl_create_digest_md5_message(struct SessionHandle *data,
   CtxtHandle ctx;
   PSecPkgInfo SecurityPackage;
   SEC_WINNT_AUTH_IDENTITY identity;
+  SEC_WINNT_AUTH_IDENTITY *p_identity;
   SecBuffer chlg_buf;
   SecBuffer resp_buf;
   SecBufferDesc chlg_desc;
   SecBufferDesc resp_desc;
   SECURITY_STATUS status;
   unsigned long attrs;
-  TimeStamp tsDummy; /* For Windows 9x compatibility of SSPI calls */
+  TimeStamp expiry; /* For Windows 9x compatibility of SSPI calls */
 
   /* Decode the base-64 encoded challenge message */
   if(strlen(chlg64) && *chlg64 != '=') {
@@ -146,13 +149,6 @@ CURLcode Curl_sasl_create_digest_md5_message(struct SessionHandle *data,
   /* Ensure we have a valid challenge message */
   if(!chlg)
     return CURLE_BAD_CONTENT_ENCODING;
-
-  /* Ensure we have some login credentials as DigestSSP cannot use the current
-     Windows user like NTLMSSP can */
-  if(!userp || !*userp) {
-    Curl_safefree(chlg);
-    return CURLE_LOGIN_DENIED;
-  }
 
   /* Query the security package for DigestSSP */
   status = s_pSecFn->QuerySecurityPackageInfo((TCHAR *) TEXT("WDigest"),
@@ -185,30 +181,38 @@ CURLcode Curl_sasl_create_digest_md5_message(struct SessionHandle *data,
     return CURLE_OUT_OF_MEMORY;
   }
 
-  /* Populate our identity structure */
-  result = Curl_create_sspi_identity(userp, passwdp, &identity);
-  if(result) {
-    Curl_safefree(spn);
-    Curl_safefree(resp);
-    Curl_safefree(chlg);
+  if(userp && *userp) {
+    /* Populate our identity structure */
+    result = Curl_create_sspi_identity(userp, passwdp, &identity);
+    if(result) {
+      Curl_safefree(spn);
+      Curl_safefree(resp);
+      Curl_safefree(chlg);
 
-    return result;
+      return result;
+    }
+
+    /* Allow proper cleanup of the identity structure */
+    p_identity = &identity;
   }
+  else
+    /* Use the current Windows user */
+    p_identity = NULL;
 
   /* Acquire our credentials handle */
   status = s_pSecFn->AcquireCredentialsHandle(NULL,
                                               (TCHAR *) TEXT("WDigest"),
                                               SECPKG_CRED_OUTBOUND, NULL,
-                                              &identity, NULL, NULL,
-                                              &handle, &tsDummy);
+                                              p_identity, NULL, NULL,
+                                              &handle, &expiry);
 
   if(status != SEC_E_OK) {
-    Curl_sspi_free_identity(&identity);
+    Curl_sspi_free_identity(p_identity);
     Curl_safefree(spn);
     Curl_safefree(resp);
     Curl_safefree(chlg);
 
-    return CURLE_OUT_OF_MEMORY;
+    return CURLE_LOGIN_DENIED;
   }
 
   /* Setup the challenge "input" security buffer */
@@ -230,14 +234,14 @@ CURLcode Curl_sasl_create_digest_md5_message(struct SessionHandle *data,
   /* Generate our challenge-response message */
   status = s_pSecFn->InitializeSecurityContext(&handle, NULL, spn, 0, 0, 0,
                                                &chlg_desc, 0, &ctx,
-                                               &resp_desc, &attrs, &tsDummy);
+                                               &resp_desc, &attrs, &expiry);
 
-  if(status == SEC_I_COMPLETE_AND_CONTINUE ||
-     status == SEC_I_CONTINUE_NEEDED)
+  if(status == SEC_I_COMPLETE_NEEDED ||
+     status == SEC_I_COMPLETE_AND_CONTINUE)
     s_pSecFn->CompleteAuthToken(&handle, &resp_desc);
-  else if(status != SEC_E_OK) {
+  else if(status != SEC_E_OK && status != SEC_I_CONTINUE_NEEDED) {
     s_pSecFn->FreeCredentialsHandle(&handle);
-    Curl_sspi_free_identity(&identity);
+    Curl_sspi_free_identity(p_identity);
     Curl_safefree(spn);
     Curl_safefree(resp);
     Curl_safefree(chlg);
@@ -254,7 +258,7 @@ CURLcode Curl_sasl_create_digest_md5_message(struct SessionHandle *data,
   s_pSecFn->FreeCredentialsHandle(&handle);
 
   /* Free the identity structure */
-  Curl_sspi_free_identity(&identity);
+  Curl_sspi_free_identity(p_identity);
 
   /* Free the SPN */
   Curl_safefree(spn);
@@ -262,14 +266,14 @@ CURLcode Curl_sasl_create_digest_md5_message(struct SessionHandle *data,
   /* Free the response buffer */
   Curl_safefree(resp);
 
-  /* Free the decoeded challenge message */
+  /* Free the decoded challenge message */
   Curl_safefree(chlg);
 
   return result;
 }
-
 #endif /* !CURL_DISABLE_CRYPTO_AUTH */
 
+#if defined(USE_KRB5)
 /*
  * Curl_sasl_create_gssapi_user_message()
  *
@@ -313,7 +317,7 @@ CURLcode Curl_sasl_create_gssapi_user_message(struct SessionHandle *data,
   SecBufferDesc resp_desc;
   SECURITY_STATUS status;
   unsigned long attrs;
-  TimeStamp tsDummy; /* For Windows 9x compatibility of SSPI calls */
+  TimeStamp expiry; /* For Windows 9x compatibility of SSPI calls */
 
   if(!krb5->credentials) {
     /* Query the security package for Kerberos */
@@ -363,9 +367,9 @@ CURLcode Curl_sasl_create_gssapi_user_message(struct SessionHandle *data,
                                                 (TCHAR *) TEXT("Kerberos"),
                                                 SECPKG_CRED_OUTBOUND, NULL,
                                                 krb5->p_identity, NULL, NULL,
-                                                krb5->credentials, &tsDummy);
+                                                krb5->credentials, &expiry);
     if(status != SEC_E_OK)
-      return CURLE_OUT_OF_MEMORY;
+      return CURLE_LOGIN_DENIED;
 
     /* Allocate our new context handle */
     krb5->context = malloc(sizeof(CtxtHandle));
@@ -413,7 +417,7 @@ CURLcode Curl_sasl_create_gssapi_user_message(struct SessionHandle *data,
                                                chlg ? &chlg_desc : NULL, 0,
                                                &context,
                                                &resp_desc, &attrs,
-                                               &tsDummy);
+                                               &expiry);
 
   if(status != SEC_E_OK && status != SEC_I_CONTINUE_NEEDED) {
     Curl_safefree(chlg);
@@ -701,5 +705,6 @@ void Curl_sasl_gssapi_cleanup(struct kerberos5data *krb5)
   /* Reset any variables */
   krb5->token_max = 0;
 }
+#endif /* USE_KRB5 */
 
 #endif /* USE_WINDOWS_SSPI */

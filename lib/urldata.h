@@ -419,7 +419,7 @@ typedef enum {
 #endif
 
 /* Struct used for GSSAPI (Kerberos V5) authentication */
-#if defined(USE_WINDOWS_SSPI)
+#if defined(USE_KRB5)
 struct kerberos5data {
   CredHandle *credentials;
   CtxtHandle *context;
@@ -432,18 +432,18 @@ struct kerberos5data {
 #endif
 
 /* Struct used for NTLM challenge-response authentication */
+#if defined(USE_NTLM)
 struct ntlmdata {
   curlntlm state;
 #ifdef USE_WINDOWS_SSPI
-  CredHandle handle;
-  CtxtHandle c_handle;
+  CredHandle *credentials;
+  CtxtHandle *context;
   SEC_WINNT_AUTH_IDENTITY identity;
   SEC_WINNT_AUTH_IDENTITY *p_identity;
-  size_t max_token_length;
+  size_t token_max;
   BYTE *output_token;
-  int has_handles;
-  BYTE *type_2;
-  unsigned long n_type_2;
+  BYTE *input_token;
+  size_t input_token_len;
 #else
   unsigned int flags;
   unsigned char nonce[8];
@@ -451,6 +451,7 @@ struct ntlmdata {
   unsigned int target_info_len;
 #endif
 };
+#endif
 
 #ifdef USE_SPNEGO
 struct negotiatedata {
@@ -465,12 +466,12 @@ struct negotiatedata {
 #else
 #ifdef USE_WINDOWS_SSPI
   DWORD status;
-  CtxtHandle *context;
   CredHandle *credentials;
+  CtxtHandle *context;
   SEC_WINNT_AUTH_IDENTITY identity;
   SEC_WINNT_AUTH_IDENTITY *p_identity;
   TCHAR *server_name;
-  size_t max_token_length;
+  size_t token_max;
   BYTE *output_token;
   size_t output_token_length;
 #endif
@@ -979,7 +980,7 @@ struct connectdata {
   struct sockaddr_in local_addr;
 #endif
 
-#if defined(USE_WINDOWS_SSPI) /* Consider moving some of the above GSS-API */
+#if defined(USE_KRB5)         /* Consider moving some of the above GSS-API */
   struct kerberos5data krb5;  /* variables into the structure definition, */
 #endif                        /* however, some of them are ftp specific. */
 
@@ -1010,17 +1011,19 @@ struct connectdata {
   curl_read_callback fread_func; /* function that reads the input */
   void *fread_in;           /* pointer to pass to the fread() above */
 
+#if defined(USE_NTLM)
   struct ntlmdata ntlm;     /* NTLM differs from other authentication schemes
                                because it authenticates connections, not
                                single requests! */
   struct ntlmdata proxyntlm; /* NTLM data for proxy */
 
-#if defined(USE_NTLM) && defined(NTLM_WB_ENABLED)
+#if defined(NTLM_WB_ENABLED)
   /* used for communication with Samba's winbind daemon helper ntlm_auth */
   curl_socket_t ntlm_auth_hlpr_socket;
   pid_t ntlm_auth_hlpr_pid;
   char* challenge_header;
   char* response_header;
+#endif
 #endif
 
   char syserr_buf [256]; /* buffer for Curl_strerror() */
@@ -1318,8 +1321,6 @@ struct UrlState {
   long rtsp_next_server_CSeq; /* the session's next server CSeq */
   long rtsp_CSeq_recv; /* most recent CSeq received */
 
-  /* if true, force SSL connection retry (workaround for certain servers) */
-  bool ssl_connect_retry;
   curl_off_t infilesize; /* size of file to upload, -1 means unknown.
                             Copied from set.filesize at start of operation */
 };
