@@ -20,28 +20,31 @@
 .\" *
 .\" **************************************************************************
 .\"
-.TH CURLOPT_TLSAUTH_PASSWORD 3 "19 Jun 2014" "libcurl 7.37.0" "curl_easy_setopt options"
+.TH CURLMOPT_MAX_TOTAL_CONNECTIONS 3 "4 Nov 2014" "libcurl 7.39.0" "curl_multi_setopt options"
 .SH NAME
-CURLOPT_TLSAUTH_PASSWORD \- password to use for TLS authentication
+CURLMOPT_MAX_TOTAL_CONNECTIONS \- max simultaneously open connections
 .SH SYNOPSIS
 #include <curl/curl.h>
 
-CURLcode curl_easy_setopt(CURL *handle, CURLOPT_TLSAUTH_PASSWORD, char *pwd);
+CURLMcode curl_multi_setopt(CURLM *handle, CURLMOPT_MAX_TOTAL_CONNECTIONS, long amount);
 .SH DESCRIPTION
-Pass a char * as parameter, which should point to the zero terminated password
-to use for the TLS authentication method specified with the
-\fICURLOPT_TLSAUTH_TYPE(3)\fP option. Requires that the
-\fICURLOPT_TLSAUTH_USERNAME(3)\fP option also be set.
+Pass a long for the \fBamount\fP. The set number will be used as the maximum
+number of simultaneously open connections in total using this multi
+handle. For each new session, libcurl will open a new connection up to the
+limit set by \fICURLMOPT_MAX_TOTAL_CONNECTIONS(3)\fP. When the limit is
+reached, the sessions will be pending until there are available
+connections. If \fICURLMOPT_PIPELINING(3)\fP is enabled, libcurl will try to
+pipeline if the host is capable of it.
 .SH DEFAULT
-NULL
+The default value is 0, which means that there is no limit. It is then simply
+controlled by the number of easy handles added.
 .SH PROTOCOLS
-All TLS-based protocols
+All
 .SH EXAMPLE
 TODO
 .SH AVAILABILITY
-Added in 7.21.4
+Added in 7.30.0
 .SH RETURN VALUE
-Returns CURLE_OK if the option is supported, CURLE_UNKNOWN_OPTION if not, or
-CURLE_OUT_OF_MEMORY if there was insufficient heap space.
+Returns CURLM_OK if the option is supported, and CURLM_UNKNOWN_OPTION if not.
 .SH "SEE ALSO"
-.BR CURLOPT_TLSAUTH_TYPE "(3), " CURLOPT_TLSAUTH_USERNAME "(3), "
+.BR CURLMOPT_MAXCONNECTS "(3), " CURLMOPT_MAX_HOST_CONNECTIONS "(3), "

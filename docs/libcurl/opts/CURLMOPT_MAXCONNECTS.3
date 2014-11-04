@@ -20,28 +20,43 @@
 .\" *
 .\" **************************************************************************
 .\"
-.TH CURLOPT_TLSAUTH_PASSWORD 3 "19 Jun 2014" "libcurl 7.37.0" "curl_easy_setopt options"
+.TH CURLMOPT_MAXCONNECTS 3 "17 Jun 2014" "libcurl 7.37.0" "curl_multi_setopt options"
 .SH NAME
-CURLOPT_TLSAUTH_PASSWORD \- password to use for TLS authentication
+CURLMOPT_MAXCONNECTS \- set size of connection cache
 .SH SYNOPSIS
 #include <curl/curl.h>
 
-CURLcode curl_easy_setopt(CURL *handle, CURLOPT_TLSAUTH_PASSWORD, char *pwd);
+CURLMcode curl_multi_setopt(CURLM *handle, CURLMOPT_MAXCONNECTS, long max);
 .SH DESCRIPTION
-Pass a char * as parameter, which should point to the zero terminated password
-to use for the TLS authentication method specified with the
-\fICURLOPT_TLSAUTH_TYPE(3)\fP option. Requires that the
-\fICURLOPT_TLSAUTH_USERNAME(3)\fP option also be set.
+Pass a long indicating the \fBmax\fP. The set number will be used as the
+maximum amount of simultaneously open connections that libcurl may keep in its
+connection cache after completed use. By default libcurl will enlarge the size
+for each added easy handle to make it fit 4 times the number of added easy
+handles.
+
+By setting this option, you can prevent the cache size from growing beyond the
+limit set by you.
+
+When the cache is full, curl closes the oldest one in the cache to prevent the
+number of open connections from increasing.
+
+This option is for the multi handle's use only, when using the easy interface
+you should instead use the \fICURLOPT_MAXCONNECTS(3)\fP option.
+
+See \fICURLMOPT_MAX_TOTAL_CONNECTIONS(3)\fP for limiting the number of active
+connections.
+
 .SH DEFAULT
-NULL
+See DESCRIPTION
 .SH PROTOCOLS
-All TLS-based protocols
+All
 .SH EXAMPLE
 TODO
 .SH AVAILABILITY
-Added in 7.21.4
+Added in 7.16.3
 .SH RETURN VALUE
-Returns CURLE_OK if the option is supported, CURLE_UNKNOWN_OPTION if not, or
-CURLE_OUT_OF_MEMORY if there was insufficient heap space.
+Returns CURLM_OK if the option is supported, and CURLM_UNKNOWN_OPTION if not.
 .SH "SEE ALSO"
-.BR CURLOPT_TLSAUTH_TYPE "(3), " CURLOPT_TLSAUTH_USERNAME "(3), "
+.BR CURLMOPT_MAX_HOST_CONNECTIONS "(3), "
+.BR CURLOPT_MAXCONNECTS "(3), "
+

@@ -20,28 +20,30 @@
 .\" *
 .\" **************************************************************************
 .\"
-.TH CURLOPT_TLSAUTH_PASSWORD 3 "19 Jun 2014" "libcurl 7.37.0" "curl_easy_setopt options"
+.TH CURLMOPT_SOCKETDATA 3 "3 Nov 2014" "libcurl 7.39.0" "curl_multi_setopt options"
 .SH NAME
-CURLOPT_TLSAUTH_PASSWORD \- password to use for TLS authentication
+CURLMOPT_SOCKETDATA \- custom pointer passed to the socket callback
 .SH SYNOPSIS
+.nf
 #include <curl/curl.h>
 
-CURLcode curl_easy_setopt(CURL *handle, CURLOPT_TLSAUTH_PASSWORD, char *pwd);
+CURLMcode curl_multi_setopt(CURLM *handle, CURLMOPT_SOCKETDATA, void *pointer);
 .SH DESCRIPTION
-Pass a char * as parameter, which should point to the zero terminated password
-to use for the TLS authentication method specified with the
-\fICURLOPT_TLSAUTH_TYPE(3)\fP option. Requires that the
-\fICURLOPT_TLSAUTH_USERNAME(3)\fP option also be set.
+A data \fIpointer\fP to pass to the socket callback set with the
+\fICURLMOPT_SOCKETFUNCTION(3)\fP option.
+
+This pointer will not be touched by libcurl but will only be passed in to the
+socket callbacks's \fBuserp\fP argument.
 .SH DEFAULT
 NULL
 .SH PROTOCOLS
-All TLS-based protocols
+All
 .SH EXAMPLE
 TODO
 .SH AVAILABILITY
-Added in 7.21.4
+Added in 7.15.4
 .SH RETURN VALUE
-Returns CURLE_OK if the option is supported, CURLE_UNKNOWN_OPTION if not, or
-CURLE_OUT_OF_MEMORY if there was insufficient heap space.
+Returns CURLM_OK.
 .SH "SEE ALSO"
-.BR CURLOPT_TLSAUTH_TYPE "(3), " CURLOPT_TLSAUTH_USERNAME "(3), "
+.BR CURLMOPT_SOCKETFUNCTION "(3), " curl_multi_socket_action "(3), "
+.BR CURLMOPT_TIMERFUNCTION "(3) "

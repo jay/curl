@@ -20,28 +20,37 @@
 .\" *
 .\" **************************************************************************
 .\"
-.TH CURLOPT_TLSAUTH_PASSWORD 3 "19 Jun 2014" "libcurl 7.37.0" "curl_easy_setopt options"
+.TH CURLMOPT_PIPELINING_SITE_BL 3 "4 Nov 2014" "libcurl 7.39.0" "curl_multi_setopt options"
 .SH NAME
-CURLOPT_TLSAUTH_PASSWORD \- password to use for TLS authentication
+CURLMOPT_PIPELINING_SITE_BL \- pipelining host blacklist
 .SH SYNOPSIS
 #include <curl/curl.h>
 
-CURLcode curl_easy_setopt(CURL *handle, CURLOPT_TLSAUTH_PASSWORD, char *pwd);
+CURLMcode curl_multi_setopt(CURLM *handle, CURLMOPT_PIPELINING_SITE_BL, char **hosts);
 .SH DESCRIPTION
-Pass a char * as parameter, which should point to the zero terminated password
-to use for the TLS authentication method specified with the
-\fICURLOPT_TLSAUTH_TYPE(3)\fP option. Requires that the
-\fICURLOPT_TLSAUTH_USERNAME(3)\fP option also be set.
+Pass a \fBhosts\fP array of char *, ending with a NULL entry. This is a list
+of sites that are blacklisted from pipelining, i.e sites that are known to not
+support HTTP pipelining. The array is copied by libcurl.
+
+Pass a NULL pointer to clear the blacklist.
 .SH DEFAULT
-NULL
+The default value is NULL, which means that there is no blacklist.
 .SH PROTOCOLS
-All TLS-based protocols
+HTTP(S)
 .SH EXAMPLE
-TODO
+.nf
+  site_blacklist[] =
+  {
+    "www.haxx.se",
+    "www.example.com:1234",
+    NULL
+  };
+
+  curl_multi_setopt(m, CURLMOPT_PIPELINE_SITE_BL, site_blacklist);
+.fi
 .SH AVAILABILITY
-Added in 7.21.4
+Added in 7.30.0
 .SH RETURN VALUE
-Returns CURLE_OK if the option is supported, CURLE_UNKNOWN_OPTION if not, or
-CURLE_OUT_OF_MEMORY if there was insufficient heap space.
+Returns CURLM_OK if the option is supported, and CURLM_UNKNOWN_OPTION if not.
 .SH "SEE ALSO"
-.BR CURLOPT_TLSAUTH_TYPE "(3), " CURLOPT_TLSAUTH_USERNAME "(3), "
+.BR CURLMOPT_PIPELINING "(3), " CURLMOPT_PIPELINING_SERVER_BL "(3), "

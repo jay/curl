@@ -411,7 +411,7 @@ if(CURL_ZLIB)
     set(HAVE_ZLIB ON)
     set(HAVE_LIBZ ON)
     list(APPEND CURL_LIBS ${ZLIB_LIBRARIES})
-    include_directories(${ZLIB_INCLUDE_DIR})
+    include_directories(${ZLIB_INCLUDE_DIRS})
   endif()
 endif()
 
@@ -507,9 +507,6 @@ if(CMAKE_USE_GSSAPI)
     message(WARNING "GSSAPI support has been requested but no supporting libraries found. Skipping.")
   endif()
 endif()
-
-# If we have features.h, then do the _BSD_SOURCE magic
-check_include_file("features.h"       HAVE_FEATURES_H)
 
 # Check for header files
 if(NOT UNIX)
