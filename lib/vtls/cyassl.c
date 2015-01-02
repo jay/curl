@@ -106,6 +106,9 @@ cyassl_connect_step1(struct connectdata *conn,
           "TLS 1.0 is used exclusively\n");
     req_method = TLSv1_client_method();
     break;
+  case CURL_SSLVERSION_SSLv3_OR_LATER:
+    req_method = SSLv23_client_method();
+    break;
   case CURL_SSLVERSION_TLSv1_0:
     req_method = TLSv1_client_method();
     break;
@@ -209,6 +212,22 @@ cyassl_connect_step1(struct connectdata *conn,
   if(!conssl->handle) {
     failf(data, "SSL: couldn't create a context (handle)!");
     return CURLE_OUT_OF_MEMORY;
+  }
+
+  switch(data->set.ssl.version) {
+  case CURL_SSLVERSION_SSLv3_OR_LATER:
+#if LIBCYASSL_VERSION_HEX >= 0x03003000 /* >= 3.3.0 */
+    /* short circuit evaluation to find minimum supported SSL version */
+    if((CyaSSL_SetMinVersion(conssl->handle, CYASSL_SSLV3) != SSL_SUCCESS)
+      &&(CyaSSL_SetMinVersion(conssl->handle, CYASSL_TLSV1) != SSL_SUCCESS)
+      &&(CyaSSL_SetMinVersion(conssl->handle, CYASSL_TLSV1_1) != SSL_SUCCESS)
+      &&(CyaSSL_SetMinVersion(conssl->handle, CYASSL_TLSV1_2) != SSL_SUCCESS))
+    {
+        failf(data, "SSL: couldn't set the minimum version");
+        return CURLE_SSL_CONNECT_ERROR;
+    }
+#endif
+    break;
   }
 
   /* Check if there's a cached ID we can/should use here! */

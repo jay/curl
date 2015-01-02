@@ -1568,6 +1568,7 @@ static CURLcode ossl_connect_step1(struct connectdata *conn, int sockindex)
   default:
   case CURL_SSLVERSION_DEFAULT:
   case CURL_SSLVERSION_TLSv1:
+  case CURL_SSLVERSION_SSLv3_OR_LATER:
   case CURL_SSLVERSION_TLSv1_0:
   case CURL_SSLVERSION_TLSv1_1:
   case CURL_SSLVERSION_TLSv1_2:
@@ -1704,6 +1705,16 @@ static CURLcode ossl_connect_step1(struct connectdata *conn, int sockindex)
   case CURL_SSLVERSION_TLSv1:
     ctx_options |= SSL_OP_NO_SSLv2;
     ctx_options |= SSL_OP_NO_SSLv3;
+    break;
+
+  case CURL_SSLVERSION_SSLv3_OR_LATER:
+#ifdef USE_TLS_SRP
+    if(data->set.ssl.authtype == CURL_TLSAUTH_SRP) {
+      infof(data, "Set version TLSv1.x for SRP authorisation\n");
+      ctx_options |= SSL_OP_NO_SSLv3;
+    }
+#endif
+    ctx_options |= SSL_OP_NO_SSLv2;
     break;
 
   case CURL_SSLVERSION_TLSv1_0:

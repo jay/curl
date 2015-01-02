@@ -42,6 +42,15 @@ TLSv1.x
 SSLv2
 .IP CURL_SSLVERSION_SSLv3
 SSLv3
+.IP CURL_SSLVERSION_SSLv3_OR_LATER
+SSLv3 or later (Added in 7.40.0)
+
+SSLv3 is included when attempting to figure which minimum protocol version to
+use. This define has the same behavior as CURL_SSLVERSION_DEFAULT did in
+versions prior to 7.39.0, except that the fallback implementation for buggy
+SSLv3 servers (only used for NSS SSL) no longer exists. Regardless of what SSL
+library libcurl is built against if you are trying to connect to a buggy SSLv3
+server you may have to specify exclusive SSLv3 by using CURL_SSLVERSION_SSLv3.
 .IP CURL_SSLVERSION_TLSv1_0
 TLSv1.0 (Added in 7.34.0)
 .IP CURL_SSLVERSION_TLSv1_1

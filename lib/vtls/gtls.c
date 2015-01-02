@@ -382,7 +382,7 @@ gtls_connect_step1(struct connectdata *conn,
     GNUTLS_CIPHER_3DES_CBC,
   };
   static const int cert_type_priority[] = { GNUTLS_CRT_X509, 0 };
-  static int protocol_priority[] = { 0, 0, 0, 0 };
+  static int protocol_priority[] = { 0, 0, 0, 0, 0 };
 #else
 #define GNUTLS_CIPHERS "NORMAL:-ARCFOUR-128:-CTYPE-ALL:+CTYPE-X509"
 /* If GnuTLS was compiled without support for SRP it will error out if SRP is
@@ -531,6 +531,12 @@ gtls_connect_step1(struct connectdata *conn,
       protocol_priority[1] = GNUTLS_TLS1_1;
       protocol_priority[2] = GNUTLS_TLS1_2;
       break;
+    case CURL_SSLVERSION_SSLv3_OR_LATER:
+      protocol_priority[0] = GNUTLS_SSL3;
+      protocol_priority[1] = GNUTLS_TLS1_0;
+      protocol_priority[2] = GNUTLS_TLS1_1;
+      protocol_priority[3] = GNUTLS_TLS1_2;
+      break;
     case CURL_SSLVERSION_TLSv1_0:
       protocol_priority[0] = GNUTLS_TLS1_0;
       break;
@@ -564,6 +570,10 @@ gtls_connect_step1(struct connectdata *conn,
     case CURL_SSLVERSION_DEFAULT:
     case CURL_SSLVERSION_TLSv1:
       prioritylist = GNUTLS_CIPHERS ":-VERS-SSL3.0:" GNUTLS_SRP;
+      break;
+    case CURL_SSLVERSION_SSLv3_OR_LATER:
+      prioritylist = GNUTLS_CIPHERS ":+VERS-SSL3.0:+VERS-TLS1.0:+VERS-TLS1.1:"
+                     "+VERS-TLS1.2:" GNUTLS_SRP;
       break;
     case CURL_SSLVERSION_TLSv1_0:
       prioritylist = GNUTLS_CIPHERS ":-VERS-SSL3.0:-VERS-TLS-ALL:"

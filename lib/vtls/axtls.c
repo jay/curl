@@ -162,6 +162,7 @@ static CURLcode connect_prep(struct connectdata *conn, int sockindex)
   switch(data->set.ssl.version) {
   case CURL_SSLVERSION_DEFAULT:
   case CURL_SSLVERSION_TLSv1:
+  case CURL_SSLVERSION_SSLv3_OR_LATER:
     break;
   default:
     failf(data, "axTLS only supports TLS 1.0 and 1.1, "

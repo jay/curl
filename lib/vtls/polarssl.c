@@ -297,6 +297,11 @@ polarssl_connect_step1(struct connectdata *conn,
                         SSL_MINOR_VERSION_0);
     infof(data, "PolarSSL: Forced min. SSL Version to be SSLv3\n");
     break;
+  case CURL_SSLVERSION_SSLv3_OR_LATER:
+    ssl_set_min_version(&connssl->ssl, SSL_MAJOR_VERSION_3,
+                        SSL_MINOR_VERSION_0);
+    infof(data, "PolarSSL: Forced min. SSL Version to be SSLv3\n");
+    break;
   case CURL_SSLVERSION_TLSv1_0:
     ssl_set_min_version(&connssl->ssl, SSL_MAJOR_VERSION_3,
                         SSL_MINOR_VERSION_1);

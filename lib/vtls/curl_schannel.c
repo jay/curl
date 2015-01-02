@@ -171,6 +171,12 @@ schannel_connect_step1(struct connectdata *conn, int sockindex)
                                               SP_PROT_TLS1_1_CLIENT |
                                               SP_PROT_TLS1_2_CLIENT;
         break;
+      case CURL_SSLVERSION_SSLv3_OR_LATER:
+        schannel_cred.grbitEnabledProtocols = SP_PROT_TLS1_0_CLIENT |
+                                              SP_PROT_TLS1_1_CLIENT |
+                                              SP_PROT_TLS1_2_CLIENT |
+                                              SP_PROT_SSL3_CLIENT;
+        break;
       case CURL_SSLVERSION_TLSv1_0:
         schannel_cred.grbitEnabledProtocols = SP_PROT_TLS1_0_CLIENT;
         break;

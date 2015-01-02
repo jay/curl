@@ -1336,6 +1336,17 @@ static CURLcode nss_init_sslver(SSLVersionRange *sslver,
 #endif
     return CURLE_OK;
 
+  case CURL_SSLVERSION_SSLv3_OR_LATER:
+    sslver->min = SSL_LIBRARY_VERSION_3_0;
+#ifdef SSL_LIBRARY_VERSION_TLS_1_2
+    sslver->max = SSL_LIBRARY_VERSION_TLS_1_2;
+#elif defined SSL_LIBRARY_VERSION_TLS_1_1
+    sslver->max = SSL_LIBRARY_VERSION_TLS_1_1;
+#else
+    sslver->max = SSL_LIBRARY_VERSION_TLS_1_0;
+#endif
+    return CURLE_OK;
+
   case CURL_SSLVERSION_SSLv2:
     sslver->min = SSL_LIBRARY_VERSION_2;
     sslver->max = SSL_LIBRARY_VERSION_2;
