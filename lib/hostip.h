@@ -70,7 +70,10 @@ struct Curl_dns_entry {
   time_t timestamp;
   long inuse;      /* use-counter, make very sure you decrease this
                       when you're done using the address you received */
+  int is_user_specified;      /* nonzero if user added addresses via
+                                 CURLOPT_RESOLVE */
 };
+typedef struct Curl_dns_entry Curl_dns_entry;
 
 /*
  * Curl_resolv() returns an entry with the info for the specified host
