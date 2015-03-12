@@ -187,13 +187,26 @@ static long          init_flags;
 #  pragma warning(disable:4232) /* MSVC extension, dllimport identity */
 #endif
 
+#if defined(BUGGY_PLATFORM_1) || defined(BUGGY_PLATFORM_2) || etc
+#define FREE_FOR_BUGGY_PLATFORMS
+void free_for_buggy_platforms(void *p)
+{
+  if(p)
+    (free)(p);
+}
+#endif
+
 #ifndef __SYMBIAN32__
 /*
  * If a memory-using function (like curl_getenv) is used before
  * curl_global_init() is called, we need to have these pointers set already.
  */
 curl_malloc_callback Curl_cmalloc = (curl_malloc_callback)malloc;
+#ifdef FREE_FOR_BUGGY_PLATFORMS
+curl_free_callback Curl_cfree = (curl_free_callback)free_for_buggy_platforms;
+#else
 curl_free_callback Curl_cfree = (curl_free_callback)free;
+#endif
 curl_realloc_callback Curl_crealloc = (curl_realloc_callback)realloc;
 curl_strdup_callback Curl_cstrdup = (curl_strdup_callback)system_strdup;
 curl_calloc_callback Curl_ccalloc = (curl_calloc_callback)calloc;
@@ -227,7 +240,11 @@ CURLcode curl_global_init(long flags)
 
   /* Setup the default memory functions here (again) */
   Curl_cmalloc = (curl_malloc_callback)malloc;
+#ifdef FREE_FOR_BUGGY_PLATFORMS
+  Curl_cfree = (curl_free_callback)free_for_buggy_platforms;
+#else
   Curl_cfree = (curl_free_callback)free;
+#endif
   Curl_crealloc = (curl_realloc_callback)realloc;
   Curl_cstrdup = (curl_strdup_callback)system_strdup;
   Curl_ccalloc = (curl_calloc_callback)calloc;
