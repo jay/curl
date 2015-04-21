@@ -65,6 +65,11 @@ CURLPROTO_SMTPS
 CURLPROTO_TELNET
 CURLPROTO_TFTP
 .fi
+
+Since version X.X.X there is a special define \fICURLPROTO_STAYSAME\fP that
+overrides all other values and is used to only allow the same protocol on a
+redirect. For example if requesting an https resource a redirect to an http
+resource would be disallowed because https != http.
 .SH DEFAULT
 All protocols except for FILE, SCP and SMB.
 .SH PROTOCOLS

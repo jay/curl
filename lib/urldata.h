@@ -1221,6 +1221,8 @@ struct UrlState {
   curl_off_t current_speed;  /* the ProgressShow() funcion sets this,
                                 bytes / second */
   bool this_is_a_follow; /* this is a followed Location: request */
+  unsigned int protocol_before_follow; /* this is the last CURLPROTO_* that was
+                                          used before there was a follow */
 
   char *first_host; /* if set, this should be the host name that we will
                        sent authorization to, no else. Used to make Location:
