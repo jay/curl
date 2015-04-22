@@ -1305,9 +1305,12 @@ as concatenating the protocols into one instance of the option.
 (Added in 7.20.2)
 .IP "--proto-redir <protocols>"
 Tells curl to use the listed protocols after a redirect. See --proto for
-how protocols are represented.
+how protocols are represented. (Added in 7.20.2)
 
-(Added in 7.20.2)
+Since version X.X.X there is a special value \fIno-downgrade\fP that can be
+used to stop a redirect from a secure resource to an unsecure resource. For
+example, if you request http://foo, which redirects to https://bar, which
+redirects to http://baz, the redirect to http://baz would not be allowed.
 .IP "--proxy-anyauth"
 Tells curl to pick a suitable authentication method when communicating with
 the given proxy. This might cause an extra request/response round-trip. (Added

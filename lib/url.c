@@ -2401,7 +2401,8 @@ CURLcode Curl_setopt(struct SessionHandle *data, CURLoption option,
        transfer, which thus helps the app which takes URLs from users or other
        external inputs and want to restrict what protocol(s) to deal
        with. Defaults to CURLPROTO_ALL. */
-    data->set.allowed_protocols = va_arg(param, long);
+    data->set.allowed_protocols = va_arg(param, long) &
+                                  ~CURLPROTO_NO_DOWNGRADE;
     break;
 
   case CURLOPT_REDIR_PROTOCOLS:
@@ -3823,15 +3824,23 @@ static CURLcode findprotocol(struct SessionHandle *data,
 
       /* it is allowed for "normal" request, now do an extra check if this is
          the result of a redirect */
-      if(data->state.this_is_a_follow &&
-         !(data->set.redir_protocols & p->protocol))
-        /* nope, get out */
-        break;
+      if(data->state.this_is_a_follow) {
+        if((data->set.redir_protocols & CURLPROTO_NO_DOWNGRADE) &&
+           (CURLPROTO_ENCRYPTED & data->state.last_found_protocol) &&
+           !(CURLPROTO_ENCRYPTED & p->protocol))
+          /* downgrade from secure to unsecure is forbidden */
+          break;
+
+        if(!(data->set.redir_protocols & p->protocol))
+          /* protocol disabled */
+          break;
+      }
 
       /* Perform setup complement if some. */
       conn->handler = conn->given = p;
 
       /* 'port' and 'remote_port' are set in setup_connection_internals() */
+      data->state.last_found_protocol = p->protocol;
       return CURLE_OK;
     }
   }

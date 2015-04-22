@@ -780,35 +780,49 @@ typedef enum {
 #define CURLHEADER_SEPARATE (1<<0)
 
 /* CURLPROTO_ defines are for the CURLOPT_*PROTOCOLS options */
-#define CURLPROTO_HTTP   (1<<0)
-#define CURLPROTO_HTTPS  (1<<1)
-#define CURLPROTO_FTP    (1<<2)
-#define CURLPROTO_FTPS   (1<<3)
-#define CURLPROTO_SCP    (1<<4)
-#define CURLPROTO_SFTP   (1<<5)
-#define CURLPROTO_TELNET (1<<6)
-#define CURLPROTO_LDAP   (1<<7)
-#define CURLPROTO_LDAPS  (1<<8)
-#define CURLPROTO_DICT   (1<<9)
-#define CURLPROTO_FILE   (1<<10)
-#define CURLPROTO_TFTP   (1<<11)
-#define CURLPROTO_IMAP   (1<<12)
-#define CURLPROTO_IMAPS  (1<<13)
-#define CURLPROTO_POP3   (1<<14)
-#define CURLPROTO_POP3S  (1<<15)
-#define CURLPROTO_SMTP   (1<<16)
-#define CURLPROTO_SMTPS  (1<<17)
-#define CURLPROTO_RTSP   (1<<18)
-#define CURLPROTO_RTMP   (1<<19)
-#define CURLPROTO_RTMPT  (1<<20)
-#define CURLPROTO_RTMPE  (1<<21)
-#define CURLPROTO_RTMPTE (1<<22)
-#define CURLPROTO_RTMPS  (1<<23)
-#define CURLPROTO_RTMPTS (1<<24)
-#define CURLPROTO_GOPHER (1<<25)
-#define CURLPROTO_SMB    (1<<26)
-#define CURLPROTO_SMBS   (1<<27)
-#define CURLPROTO_ALL    (~0) /* enable everything */
+#define CURLPROTO_HTTP           (1<<0)
+#define CURLPROTO_HTTPS          (1<<1)
+#define CURLPROTO_FTP            (1<<2)
+#define CURLPROTO_FTPS           (1<<3)
+#define CURLPROTO_SCP            (1<<4)
+#define CURLPROTO_SFTP           (1<<5)
+#define CURLPROTO_TELNET         (1<<6)
+#define CURLPROTO_LDAP           (1<<7)
+#define CURLPROTO_LDAPS          (1<<8)
+#define CURLPROTO_DICT           (1<<9)
+#define CURLPROTO_FILE           (1<<10)
+#define CURLPROTO_TFTP           (1<<11)
+#define CURLPROTO_IMAP           (1<<12)
+#define CURLPROTO_IMAPS          (1<<13)
+#define CURLPROTO_POP3           (1<<14)
+#define CURLPROTO_POP3S          (1<<15)
+#define CURLPROTO_SMTP           (1<<16)
+#define CURLPROTO_SMTPS          (1<<17)
+#define CURLPROTO_RTSP           (1<<18)
+#define CURLPROTO_RTMP           (1<<19)
+#define CURLPROTO_RTMPT          (1<<20)
+#define CURLPROTO_RTMPE          (1<<21)
+#define CURLPROTO_RTMPTE         (1<<22)
+#define CURLPROTO_RTMPS          (1<<23)
+#define CURLPROTO_RTMPTS         (1<<24)
+#define CURLPROTO_GOPHER         (1<<25)
+#define CURLPROTO_SMB            (1<<26)
+#define CURLPROTO_SMBS           (1<<27)
+#define CURLPROTO_NO_DOWNGRADE   (1<<28)
+#define CURLPROTO_ALL            (~CURLPROTO_NO_DOWNGRADE)
+#define CURLPROTO_ENCRYPTED (CURLPROTO_HTTPS  | \
+                             CURLPROTO_FTPS   | \
+                             CURLPROTO_SCP    | \
+                             CURLPROTO_SFTP   | \
+                             CURLPROTO_LDAPS  | \
+                             CURLPROTO_IMAPS  | \
+                             CURLPROTO_POP3S  | \
+                             CURLPROTO_SMTPS  | \
+                             CURLPROTO_RTMPE  | \
+                             CURLPROTO_RTMPTE | \
+                             CURLPROTO_RTMPS  | \
+                             CURLPROTO_RTMPTS | \
+                             CURLPROTO_SMBS)
 
 /* long may be 32 or 64 bits, but we should never depend on anything else
    but 32 */

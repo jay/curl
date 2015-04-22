@@ -1308,6 +1308,7 @@ CURLcode Curl_pretransfer(struct SessionHandle *data)
 
   data->set.followlocation=0; /* reset the location-follow counter */
   data->state.this_is_a_follow = FALSE; /* reset this */
+  data->state.last_found_protocol = 0;
   data->state.errorbuf = FALSE; /* no error has occurred */
   data->state.httpversion = 0; /* don't assume any particular server version */
 

@@ -65,6 +65,11 @@ CURLPROTO_SMTPS
 CURLPROTO_TELNET
 CURLPROTO_TFTP
 .fi
+
+Since version X.X.X there is a special flag \fICURLPROTO_NO_DOWNGRADE\fP that
+can be used to stop a redirect from a secure resource to an unsecure resource.
+For example, if you request http://foo, which redirects to https://bar, which
+redirects to http://baz, the redirect to http://baz would not be allowed.
 .SH DEFAULT
 All protocols except for FILE, SCP and SMB.
 .SH PROTOCOLS
