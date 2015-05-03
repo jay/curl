@@ -823,7 +823,7 @@ schannel_recv(struct connectdata *conn, int sockindex,
               char *buf, size_t len, CURLcode *err)
 {
   size_t size = 0;
-  ssize_t nread = 0;
+  ssize_t nread = -1;
   CURLcode result;
   struct SessionHandle *data = conn->data;
   struct ssl_connect_data *connssl = &conn->ssl[sockindex];
@@ -833,9 +833,15 @@ schannel_recv(struct connectdata *conn, int sockindex,
   SecBuffer inbuf[4];
   SecBufferDesc inbuf_desc;
   SECURITY_STATUS sspi_status = SEC_E_OK;
+  DWORD ver_full = GetVersion();
+  DWORD ver_major = (DWORD)(LOBYTE(LOWORD(ver_full)));
+  DWORD ver_minor = (DWORD)(HIBYTE(LOWORD(ver_full)));
 
   infof(data, "schannel: client wants to read %zu bytes\n", len);
   *err = CURLE_OK;
+
+  if(!len)
+    return 0;
 
   /* buffer to store previously received and decrypted data */
   if(connssl->decdata_buffer == NULL) {
@@ -884,7 +890,7 @@ schannel_recv(struct connectdata *conn, int sockindex,
                            size, &nread);
     /* check for received data */
     if(*err != CURLE_OK) {
-      return -1;
+      nread = -1;
     }
     else if(nread > 0) {
       /* increase encrypted data buffer offset */
@@ -916,7 +922,8 @@ schannel_recv(struct connectdata *conn, int sockindex,
     /* check if we need more data */
     if(sspi_status == SEC_E_INCOMPLETE_MESSAGE) {
       infof(data, "schannel: failed to decrypt data, need more data\n");
-      *err = CURLE_AGAIN;
+      if(*err == CURLE_OK)
+        *err = CURLE_AGAIN;
       return -1;
     }
 
@@ -1036,16 +1043,22 @@ schannel_recv(struct connectdata *conn, int sockindex,
     infof(data, "schannel: decrypted data returned %zd\n", size);
     infof(data, "schannel: decrypted data buffer: offset %zu length %zu\n",
           connssl->decdata_offset, connssl->decdata_length);
+    *err = CURLE_OK;
+    return (ssize_t)size;
   }
   /* check if the server closed the connection, */
   /* including special check for Windows 2000 Professional */
-  else if(sspi_status == SEC_I_CONTEXT_EXPIRED || (sspi_status == SEC_E_OK &&
-          connssl->encdata_offset && connssl->encdata_buffer[0] == 0x15)) {
+  else if(sspi_status == SEC_I_CONTEXT_EXPIRED || nread == 0 ||
+          (ver_major == 5 && ver_minor == 0 && sspi_status == SEC_E_OK &&
+           connssl->encdata_offset && connssl->encdata_buffer[0] == 0x15)) {
     infof(data, "schannel: server closed the connection\n");
     *err = CURLE_OK;
+    return 0;
   }
 
-  return size;
+  if(*err == CURLE_OK)
+    *err = CURLE_AGAIN;
+  return -1;
 }
 
 CURLcode
