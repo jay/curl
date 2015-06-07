@@ -324,6 +324,7 @@ struct ssl_connect_data {
   unsigned long req_flags, ret_flags;
   CURLcode recv_last_err; /* the error set by schannel_recv in a prior call */
   bool recv_sspi_close_notify; /* true if connection closed by close_notify */
+  bool recv_connection_closed; /* true if connection closed, regardless how */
 #endif /* USE_SCHANNEL */
 #ifdef USE_DARWINSSL
   SSLContextRef ssl_ctx;
