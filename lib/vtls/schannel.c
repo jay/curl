@@ -1098,6 +1098,9 @@ cleanup:
   /* Warning- there is no guarantee the encdata state is valid at this point */
   infof(data, "schannel: schannel_recv cleanup\n");
 
+  if(*err == CURLE_OK && !connssl->recv_connection_closed)
+    *err = CURLE_AGAIN;
+
   connssl->recv_last_err = *err;
 
   size = len < connssl->decdata_offset ? len : connssl->decdata_offset;
