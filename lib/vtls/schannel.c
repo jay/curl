@@ -268,7 +268,7 @@ schannel_connect_step1(struct connectdata *conn, int sockindex)
   infof(data, "schannel: sent initial handshake data: "
         "sent %zd bytes\n", written);
 
-  connssl->recv_last_err = CURLE_OK;
+  connssl->recv_unrecoverable_err = CURLE_OK;
   connssl->recv_sspi_close_notify = false;
   connssl->recv_connection_closed = false;
 
@@ -857,7 +857,7 @@ schannel_recv(struct connectdata *conn, int sockindex,
   winver_minor = (DWORD)(HIBYTE(LOWORD(winver_full)));
 
   /****************************************************************************
-   * Don't return or set connssl->recv_last_err unless in the cleanup.
+   * Don't return or set connssl->recv_unrecoverable_err unless in the cleanup.
    * The pattern for return error is set *err, optional infof, goto cleanup.
    *
    * Our priority is to always return as much decrypted data to the caller as
@@ -877,17 +877,15 @@ schannel_recv(struct connectdata *conn, int sockindex,
     ; /* do nothing */
   }
   else if(len <= connssl->decdata_offset) {
-    *err = CURLE_OK;
     infof(data, "schannel: enough decrypted data is already available\n");
     goto cleanup;
   }
-  else if(connssl->recv_last_err && connssl->recv_last_err != CURLE_AGAIN) {
-    *err = connssl->recv_last_err;
+  else if(connssl->recv_unrecoverable_err) {
+    *err = connssl->recv_unrecoverable_err;
     infof(data, "schannel: an unrecoverable error occurred in a prior call\n");
     goto cleanup;
   }
   else if(connssl->recv_sspi_close_notify) {
-    *err = CURLE_OK;
     infof(data, "schannel: server indicated shutdown in a prior call\n");
     goto cleanup;
   }
@@ -924,7 +922,7 @@ schannel_recv(struct connectdata *conn, int sockindex,
                            (char *)(connssl->encdata_buffer +
                                     connssl->encdata_offset),
                            size, &nread);
-    if(*err != CURLE_OK) {
+    if(*err) {
       nread = -1;
       if(*err == CURLE_AGAIN)
         infof(data, "schannel: Curl_read_plain returned CURLE_AGAIN\n");
@@ -1062,7 +1060,7 @@ schannel_recv(struct connectdata *conn, int sockindex,
         }
         /* now retry receiving data */
         infof(data, "schannel: SSL/TLS connection renegotiated\n");
-        return schannel_recv(conn, sockindex, buf, len, err);
+        continue;
       }
       /* check if the server closed the connection */
       else if(sspi_status == SEC_I_CONTEXT_EXPIRED) {
@@ -1070,13 +1068,13 @@ schannel_recv(struct connectdata *conn, int sockindex,
            returned so we have to work around that in cleanup. */
         connssl->recv_sspi_close_notify = true;
         connssl->recv_connection_closed = true;
-        *err = CURLE_OK;
         infof(data, "schannel: server closed the connection\n");
         goto cleanup;
       }
     }
     else if(sspi_status == SEC_E_INCOMPLETE_MESSAGE) {
-      *err = CURLE_AGAIN;
+      if(!*err)
+        *err = CURLE_AGAIN;
       infof(data, "schannel: failed to decrypt data, need more data\n");
       goto cleanup;
     }
@@ -1098,11 +1096,6 @@ cleanup:
   /* Warning- there is no guarantee the encdata state is valid at this point */
   infof(data, "schannel: schannel_recv cleanup\n");
 
-  if(*err == CURLE_OK && !connssl->recv_connection_closed)
-    *err = CURLE_AGAIN;
-
-  connssl->recv_last_err = *err;
-
   size = len < connssl->decdata_offset ? len : connssl->decdata_offset;
   if(size) {
     memcpy(buf, connssl->decdata_buffer, size);
@@ -1116,6 +1109,11 @@ cleanup:
     *err = CURLE_OK;
     return (ssize_t)size;
   }
+
+  if(*err && *err != CURLE_AGAIN)
+      connssl->recv_unrecoverable_err = *err;
+  else if(!*err && !connssl->recv_connection_closed)
+      *err = CURLE_AGAIN;
 
   /* Special case for Windows 2000, which it seems doesn't return close_notify.
   If the connection was closed we assume it was graceful (close_notify) since
