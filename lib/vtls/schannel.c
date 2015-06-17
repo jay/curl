@@ -1060,8 +1060,10 @@ schannel_recv(struct connectdata *conn, int sockindex,
         /* In Windows 2000 SEC_I_CONTEXT_EXPIRED (close_notify) is not
            returned so we have to work around that in cleanup. */
         connssl->recv_sspi_close_notify = true;
-        connssl->recv_connection_closed = true;
-        infof(data, "schannel: server closed the connection\n");
+        if(!connssl->recv_connection_closed) {
+          connssl->recv_connection_closed = true;
+          infof(data, "schannel: server closed the connection\n");
+        }
         goto cleanup;
       }
     }
@@ -1106,8 +1108,10 @@ cleanup:
 
     if(winver_major == 5 && winver_minor == 0 && sspi_status == SEC_E_OK)
       connssl->recv_sspi_close_notify = true;
-    else
+    else {
       *err = CURLE_RECV_ERROR;
+      infof(data, "schannel: server closed abruptly (missing close_notify)\n");
+    }
   }
 
   /* Any error other than CURLE_AGAIN is an unrecoverable error. */
