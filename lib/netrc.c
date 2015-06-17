@@ -109,7 +109,7 @@ int Curl_parsenetrc(const char *host,
     netrc_alloc = TRUE;
   }
 
-  file = fopen(netrcfile, "r");
+  file = fopen(netrcfile, FOPEN_READTEXT);
   if(netrc_alloc)
     free(netrcfile);
   if(file) {

@@ -143,7 +143,7 @@ static const char *const helptext[] = {
   " -n, --netrc         Must read .netrc for user name and password",
   "     --netrc-optional  Use either .netrc or URL; overrides -n",
   "     --netrc-file FILE  Specify FILE for netrc",
-  " -:  --next          "
+  " -:, --next          "
   "Allows the following URL to use a separate set of options",
   "     --no-alpn       Disable the ALPN TLS extension (H)",
   " -N, --no-buffer     Disable buffering of the output stream",
@@ -174,6 +174,10 @@ static const char *const helptext[] = {
   "     --proxy-negotiate  "
   "Use HTTP Negotiate (SPNEGO) authentication on the proxy (H)",
   "     --proxy-ntlm    Use NTLM authentication on the proxy (H)",
+#if defined(HAVE_GSSAPI) || defined(USE_WINDOWS_SSPI)
+  "     --proxy-service-name NAME  SPNEGO proxy service name",
+  "     --service-name NAME  SPNEGO service name",
+#endif
   " -U, --proxy-user USER[:PASSWORD]  Proxy user and password",
   "     --proxy1.0 HOST[:PORT]  Use HTTP/1.0 proxy on given port",
   " -p, --proxytunnel   Operate through a HTTP proxy tunnel (using CONNECT)",

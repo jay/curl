@@ -89,32 +89,6 @@ Curl_hash_init(struct curl_hash *h,
   }
 }
 
-struct curl_hash *
-Curl_hash_alloc(int slots,
-                hash_function hfunc,
-                comp_function comparator,
-                curl_hash_dtor dtor)
-{
-  struct curl_hash *h;
-
-  if(!slots || !hfunc || !comparator ||!dtor) {
-    return NULL; /* failure */
-  }
-
-  h = malloc(sizeof(struct curl_hash));
-  if(h) {
-    if(Curl_hash_init(h, slots, hfunc, comparator, dtor)) {
-      /* failure */
-      free(h);
-      h = NULL;
-    }
-  }
-
-  return h;
-}
-
-
-
 static struct curl_hash_element *
 mk_hash_element(const void *key, size_t key_len, const void *p)
 {
@@ -238,8 +212,11 @@ Curl_hash_apply(curl_hash *h, void *user,
 }
 #endif
 
+/* Destroys all the entries in the given hash and resets its attributes,
+ * prepping the given hash for [static|dynamic] deallocation.
+ */
 void
-Curl_hash_clean(struct curl_hash *h)
+Curl_hash_destroy(struct curl_hash *h)
 {
   int i;
 
@@ -253,6 +230,17 @@ Curl_hash_clean(struct curl_hash *h)
   h->slots = 0;
 }
 
+/* Removes all the entries in the given hash.
+ *
+ * @unittest: 1602
+ */
+void
+Curl_hash_clean(struct curl_hash *h)
+{
+  Curl_hash_clean_with_criterium(h, NULL, NULL);
+}
+
+/* Cleans all entries that pass the comp function criteria. */
 void
 Curl_hash_clean_with_criterium(struct curl_hash *h, void *user,
                                int (*comp)(void *, void *))
@@ -272,24 +260,13 @@ Curl_hash_clean_with_criterium(struct curl_hash *h, void *user,
       struct curl_hash_element *he = le->ptr;
       lnext = le->next;
       /* ask the callback function if we shall remove this entry or not */
-      if(comp(user, he->ptr)) {
+      if(comp == NULL || comp(user, he->ptr)) {
         Curl_llist_remove(list, le, (void *) h);
         --h->size; /* one less entry in the hash now */
       }
       le = lnext;
     }
   }
-}
-
-void
-Curl_hash_destroy(struct curl_hash *h)
-{
-  if(!h)
-    return;
-
-  Curl_hash_clean(h);
-
-  free(h);
 }
 
 size_t Curl_hash_str(void* key, size_t key_length, size_t slots_num)

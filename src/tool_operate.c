@@ -151,7 +151,7 @@ static curl_off_t vms_realfilesize(const char * name,
   int ret_stat;
   FILE * file;
 
-  file = fopen(name, "r");
+  file = fopen(name, "r"); /* VMS */
   if(file == NULL) {
     return 0;
   }
@@ -1497,7 +1497,7 @@ static CURLcode operate_do(struct GlobalConfig *global,
                 if(retry_sleep > RETRY_SLEEP_MAX)
                   retry_sleep = RETRY_SLEEP_MAX;
               }
-              if(outs.bytes && outs.filename) {
+              if(outs.bytes && outs.filename && outs.stream) {
                 /* We have written data to a output file, we truncate file
                  */
                 if(!global->mute)

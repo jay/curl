@@ -1638,6 +1638,9 @@ typedef enum {
   /* Service Name */
   CINIT(SERVICE_NAME, OBJECTPOINT, 236),
 
+  /* Wait/don't wait for pipe/mutex to clarify */
+  CINIT(PIPEWAIT, LONG, 237),
+
   CURLOPT_LASTENTRY /* the last unused */
 } CURLoption;
 
@@ -1691,6 +1694,11 @@ enum {
 
   CURL_HTTP_VERSION_LAST /* *ILLEGAL* http version */
 };
+
+/* Convenience definition simple because the name of the version is HTTP/2 and
+   not 2.0. The 2_0 version of the enum name was set while the version was
+   still planned to be 2.0 and we stick to it for compatibility. */
+#define CURL_HTTP_VERSION_2 CURL_HTTP_VERSION_2_0
 
 /*
  * Public API enums for RTSP requests
