@@ -24,17 +24,17 @@
 #include "urldata.h"
 #include "non-ascii.h"
 
-CURL *easy;
+CURL *curl;
 
 static CURLcode unit_setup(void)
 {
-  easy = curl_easy_init();
+  curl = curl_easy_init();
   return CURLE_OK;
 }
 
 static void unit_stop(void)
 {
-  curl_easy_cleanup(easy);
+  curl_easy_cleanup(curl);
 }
 
 
@@ -109,14 +109,13 @@ UNITTEST_START
    * hostname that contains invalid utf8, and verifying that we get back
    * an error that shows that our validation logic rejected it.
    */
-  struct SessionHandle * curl;
-  CURLcode ret = Curl_open(&curl);
-  fail_unless(ret == 0, "serious error");
-  ret = curl_easy_setopt(curl, CURLOPT_URL, "http://x\xC0\x80.com/");
-  fail_unless(ret == 0, "shouldn't complain yet");
-  ret = curl_easy_perform(curl);
-  fail_unless(ret != 0, "should get error about invalid hostname");
-  /*printf("%s\n", curl_easy_strerror(ret));*/
+  {
+    CURLcode ret;
+    ret = curl_easy_setopt(curl, CURLOPT_URL, "http://x\xC0\x80.com/");
+    fail_unless(ret == 0, "shouldn't complain yet");
+    ret = curl_easy_perform(curl);
+    fail_unless(ret == 6, "should get error about invalid hostname");
+  }
 #else
   /*printf("test skipped; libidn not active\n");*/
 #endif
