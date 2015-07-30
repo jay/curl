@@ -31,7 +31,7 @@ CURLcode curl_easy_setopt(CURL *handle, CURLOPT_SSL_VERIFYPEER, long verify);
 Pass a long as parameter to enable or disable.
 
 This option determines whether curl verifies the authenticity of the peer's
-certificate. A value of 1 means curl verifies; 0 (zero) means it doesn't.
+certificate. A value of 1L means curl verifies; 0L (zero) means it doesn't.
 
 When negotiating a TLS or SSL connection, the server sends a certificate
 indicating its identity.  Curl verifies whether the certificate is authentic,
@@ -58,7 +58,7 @@ verification makes the communication insecure. Just having encryption on a
 transfer is not enough as you cannot be sure that you are communicating with
 the correct end-point.
 .SH DEFAULT
-By default, curl assumes a value of 1.
+By default, curl assumes a value of 1L.
 .SH PROTOCOLS
 All TLS based protocols: HTTPS, FTPS, IMAPS, POP3, SMTPS etc.
 .SH EXAMPLE

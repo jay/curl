@@ -28,12 +28,12 @@ CURLOPT_FTP_USE_PRET \- enable the PRET command
 
 CURLcode curl_easy_setopt(CURL *handle, CURLOPT_FTP_USE_PRET, long enable);
 .SH DESCRIPTION
-Pass a long. If the value is 1, it tells curl to send a PRET command before
+Pass a long. If the value is 1L, it tells curl to send a PRET command before
 PASV (and EPSV). Certain FTP servers, mainly drftpd, require this non-standard
 command for directory listings as well as up and downloads in PASV mode. Has
 no effect when using the active FTP transfers mode.
 .SH DEFAULT
-0
+0L
 .SH PROTOCOLS
 FTP
 .SH EXAMPLE

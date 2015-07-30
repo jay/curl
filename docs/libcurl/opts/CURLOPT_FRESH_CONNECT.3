@@ -28,7 +28,7 @@ CURLOPT_FRESH_CONNECT \- force a new connection to be used
 
 CURLcode curl_easy_setopt(CURL *handle, CURLOPT_FRESH_CONNECT, long fresh);
 .SH DESCRIPTION
-Pass a long. Set to 1 to make the next transfer use a new (fresh) connection
+Pass a long. Set to 1L to make the next transfer use a new (fresh) connection
 by force instead of trying to re-use an existing one.  This option should be
 used with caution and only if you understand what it does as it may seriously
 impact performance.
@@ -36,10 +36,10 @@ impact performance.
 Related functionality is \fICURLOPT_FORBID_REUSE(3)\fP which makes sure the
 connection is closed after use so that it won't be re-used.
 
-Set \fIfresh\fP to 0 to have libcurl attempt re-using an existing connection
+Set \fIfresh\fP to 0L to have libcurl attempt re-using an existing connection
 (default behavior).
 .SH DEFAULT
-0
+0L
 .SH PROTOCOLS
 Most
 .SH EXAMPLE

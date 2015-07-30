@@ -28,7 +28,7 @@ CURLOPT_SSLENGINE_DEFAULT \- make SSL engine default
 
 CURLcode curl_easy_setopt(CURL *handle, CURLOPT_SSLENGINE_DEFAULT, long val);
 .SH DESCRIPTION
-Pass a long set to 1 as parameter. Sets the actual crypto engine as the
+Pass a long set to 1L as parameter. Sets the actual crypto engine as the
 default for (asymmetric) crypto operations.
 
 If the crypto device cannot be set, \fICURLE_SSL_ENGINE_SETFAILED\fP is

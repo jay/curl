@@ -28,7 +28,7 @@ CURLOPT_TRANSFERTEXT \- request a text based transfer for FTP
 
 CURLcode curl_easy_setopt(CURL *handle, CURLOPT_TRANSFERTEXT, long text);
 .SH DESCRIPTION
-A parameter set to 1 tells the library to use ASCII mode for FTP transfers,
+A parameter set to 1L tells the library to use ASCII mode for FTP transfers,
 instead of the default binary transfer. For win32 systems it does not set the
 stdout to binary mode. This option can be usable when transferring text data
 between systems with different views on certain characters, such as newlines
@@ -38,7 +38,7 @@ libcurl does not do a complete ASCII conversion when doing ASCII transfers
 over FTP. This is a known limitation/flaw that nobody has rectified. libcurl
 simply sets the mode to ASCII and performs a standard transfer.
 .SH DEFAULT
-0, disabled
+0L, disabled
 .SH PROTOCOLS
 FTP
 .SH EXAMPLE

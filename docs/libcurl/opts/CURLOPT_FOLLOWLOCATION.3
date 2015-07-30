@@ -28,7 +28,7 @@ CURLOPT_FOLLOWLOCATION \- follow HTTP 3xx redirects
 
 CURLcode curl_easy_setopt(CURL *handle, CURLOPT_FOLLOWLOCATION, long enable);
 .SH DESCRIPTION
-A parameter set to 1 tells the library to follow any Location: header that the
+A parameter set to 1L tells the library to follow any Location: header that the
 server sends as part of a HTTP header in a 3xx response.
 
 This means that libcurl will re-send the same request on the new location and
@@ -46,7 +46,7 @@ follow logic with the use of \fIcurl_easy_getinfo(3)\fP's
 \fICURLINFO_REDIRECT_URL\fP option instead of using
 \fICURLOPT_FOLLOWLOCATION(3)\fP.
 .SH DEFAULT
-0, disabled
+0L, disabled
 .SH PROTOCOLS
 HTTP(S)
 .SH EXAMPLE

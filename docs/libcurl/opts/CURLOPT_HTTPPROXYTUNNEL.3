@@ -28,7 +28,7 @@ CURLOPT_HTTPPROXYTUNNEL \- tunnel through HTTP proxy
 
 CURLcode curl_easy_setopt(CURL *handle, CURLOPT_HTTPPROXYTUNNEL, long tunnel);
 .SH DESCRIPTION
-Set the parameter to 1 to make libcurl tunnel all operations through the HTTP
+Set the parameter to 1L to make libcurl tunnel all operations through the HTTP
 proxy. There is a big difference between using a proxy and to tunnel through
 it. If you don't know what this means, you probably don't want this tunneling
 option.
@@ -41,7 +41,7 @@ it allows CONNECT requests to and often only port 80 and 443 are allowed.
 When using this, it only makes sense to use \fICURLOPT_PROXYTYPE(3)\fP set to
 a HTTP proxy.
 .SH DEFAULT
-0
+0L
 .SH PROTOCOLS
 All network protocols
 .SH EXAMPLE

@@ -28,7 +28,7 @@ CURLOPT_WILDCARDMATCH \- enable directory wildcard transfers
 
 CURLcode curl_easy_setopt(CURL *handle, CURLOPT_WILDCARDMATCH, long onoff);
 .SH DESCRIPTION
-Set \fIonoff\fP to 1 if you want to transfer multiple files according to a
+Set \fIonoff\fP to 1L if you want to transfer multiple files according to a
 file name pattern. The pattern can be specified as part of the
 \fICURLOPT_URL(3)\fP option, using an fnmatch-like pattern (Shell Pattern
 Matching) in the last part of URL (file name).
@@ -75,6 +75,8 @@ Using the rules above, a file name pattern can be constructed:
 \&ftp://example.com/some/path/\fB[a-z[:upper:]\\\\].jpeg\fP
 .RE
 .PP
+.SH DEFAULT
+0L
 .SH PROTOCOLS
 This feature is only supported for FTP download.
 .SH EXAMPLE

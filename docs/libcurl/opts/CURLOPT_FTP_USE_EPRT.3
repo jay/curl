@@ -28,7 +28,7 @@ CURLOPT_FTP_USE_EPRT \- enable/disable use of EPRT with FTP
 
 CURLcode curl_easy_setopt(CURL *handle, CURLOPT_FTP_USE_EPRT, long enabled);
 .SH DESCRIPTION
-Pass a long. If the value is 1, it tells curl to use the EPRT command when
+Pass a long. If the value is 1L, it tells curl to use the EPRT command when
 doing active FTP downloads (which is enabled by
 \fICURLOPT_FTPPORT(3)\fP). Using EPRT means that it will first attempt to use
 EPRT before using PORT, but if you pass zero to this option, it will not try

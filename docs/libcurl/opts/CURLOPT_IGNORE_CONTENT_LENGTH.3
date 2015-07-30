@@ -30,7 +30,7 @@ CURLOPT_IGNORE_CONTENT_LENGTH \- ignore Content-Length in HTTP response
 CURLcode curl_easy_setopt(CURL *handle, CURLOPT_IGNORE_CONTENT_LENGTH,
                           long ignore);
 .SH DESCRIPTION
-If \fIignore\fP is set to 1, ignore the Content-Length header in the HTTP
+If \fIignore\fP is set to 1L, ignore the Content-Length header in the HTTP
 response. This is useful for Apache 1.x (and similar servers) which will
 report incorrect content length for files over 2 gigabytes. If this option is
 used, curl will not be able to accurately report progress, and will simply
@@ -38,7 +38,7 @@ stop the download when the server ends the connection.
 
 Only use this option if strictly necessary.
 .SH DEFAULT
-0
+0L (don't ignore)
 .SH PROTOCOLS
 HTTP
 .SH EXAMPLE

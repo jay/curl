@@ -28,14 +28,14 @@ CURLOPT_FTP_USE_EPSV \- enable/disable use of EPSV
 
 CURLcode curl_easy_setopt(CURL *handle, CURLOPT_FTP_USE_EPSV, long epsv);
 .SH DESCRIPTION
-Pass \fIepsv\fP as a long. If the value is 1, it tells curl to use the EPSV
+Pass \fIepsv\fP as a long. If the value is 1L, it tells curl to use the EPSV
 command when doing passive FTP downloads (which it does by default). Using
 EPSV means that it will first attempt to use EPSV before using PASV, but if
 you pass zero to this option, it will not try using EPSV, only plain PASV.
 
 If the server is an IPv6 host, this option will have no effect as of 7.12.3.
 .SH DEFAULT
-1
+1L
 .SH PROTOCOLS
 FTP
 .SH EXAMPLE

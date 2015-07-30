@@ -30,13 +30,13 @@ CURLOPT_SSL_SESSIONID_CACHE \- enable/disable use of the SSL session-ID cache
 CURLcode curl_easy_setopt(CURL *handle, CURLOPT_SSL_SESSIONID_CACHE,
                          long enabled);
 .SH DESCRIPTION
-Pass a long set to 0 to disable libcurl's use of SSL session-ID caching. Set
-this to 1 to enable it. By default all transfers are done using the cache
+Pass a long set to 0L to disable libcurl's use of SSL session-ID caching. Set
+this to 1L to enable it. By default all transfers are done using the cache
 enabled. While nothing ever should get hurt by attempting to reuse SSL
 session-IDs, there seem to be or have been broken SSL implementations in the
 wild that may require you to disable this in order for you to succeed.
 .SH DEFAULT
-1
+1L
 .SH PROTOCOLS
 All TLS-based
 .SH EXAMPLE

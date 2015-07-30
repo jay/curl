@@ -36,7 +36,7 @@ the server it is known as.
 When negotiating TLS and SSL connections, the server sends a certificate
 indicating its identity.
 
-When \fICURLOPT_SSL_VERIFYHOST(3)\fP is 2, that certificate must indicate that
+When \fICURLOPT_SSL_VERIFYHOST(3)\fP is 2L, that certificate must indicate that
 the server is the server to which you meant to connect, or the connection
 fails. Simply put, it means it has to have the same name in the certificate as
 is in the URL you operate against.
@@ -45,16 +45,16 @@ Curl considers the server the intended one when the Common Name field or a
 Subject Alternate Name field in the certificate matches the host name in the
 URL to which you told Curl to connect.
 
-When the \fIverify\fP value is 1, \fIcurl_easy_setopt\fP will return an error
+When the \fIverify\fP value is 1L, \fIcurl_easy_setopt\fP will return an error
 and the option value will not be changed.  It was previously (in 7.28.0 and
 earlier) a debug option of some sorts, but it is no longer supported due to
 frequently leading to programmer mistakes. Future versions will stop returning
-an error for 1 and just treat 1 and 2 the same.
+an error for 1L and just treat 1L and 2L the same.
 
-When the \fIverify\fP value is 0, the connection succeeds regardless of the
+When the \fIverify\fP value is 0L, the connection succeeds regardless of the
 names in the certificate. Use that ability with caution!
 
-The default value for this option is 2.
+The default value for this option is 2L.
 
 This option controls checking the server's certificate's claimed identity.
 The server could be lying.  To control lying, see
@@ -62,7 +62,7 @@ The server could be lying.  To control lying, see
 \fICURLOPT_SSL_VERIFYPEER(3)\fP is zero, \fICURLOPT_SSL_VERIFYHOST(3)\fP is
 also set to zero and cannot be overridden.
 .SH DEFAULT
-2
+2L
 .SH PROTOCOLS
 All TLS based protocols: HTTPS, FTPS, IMAPS, POP3, SMTPS etc.
 .SH EXAMPLE

@@ -28,14 +28,14 @@ CURLOPT_HTTPGET \- ask for a HTTP GET request
 
 CURLcode curl_easy_setopt(CURL *handle, CURLOPT_HTTPGET, long useget);
 .SH DESCRIPTION
-Pass a long. If \fIuseget\fP is 1, this forces the HTTP request to get back to
+Pass a long. If \fIuseget\fP is 1L, this forces the HTTP request to get back to
 using GET. Usable if a POST, HEAD, PUT, etc has been used previously using the
 same curl \fIhandle\fP.
 
-When setting \fICURLOPT_HTTPGET(3)\fP to 1, it will automatically set
-\fICURLOPT_NOBODY(3)\fP to 0 and \fICURLOPT_UPLOAD(3)\fP to 0.
+When setting \fICURLOPT_HTTPGET(3)\fP to 1L, it will automatically set
+\fICURLOPT_NOBODY(3)\fP to 0L and \fICURLOPT_UPLOAD(3)\fP to 0L.
 .SH DEFAULT
-0
+0L
 .SH PROTOCOLS
 HTTP(S)
 .SH EXAMPLE

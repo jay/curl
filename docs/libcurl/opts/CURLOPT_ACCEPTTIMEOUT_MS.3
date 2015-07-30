@@ -31,7 +31,7 @@ CURLcode curl_easy_setopt(CURL *handle, CURLOPT_ACCEPTTIMEOUT_MS, long ms);
 Pass a long telling libcurl the maximum number of milliseconds to wait for a
 server to connect back to libcurl when an active FTP connection is used.
 .SH DEFAULT
-If no timeout is set, the internal default of 60000 (one minute) will be used.
+If no timeout is set, the internal default of 60000L (one minute) will be used.
 .SH PROTOCOLS
 FTP
 .SH EXAMPLE

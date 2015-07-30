@@ -28,7 +28,7 @@ CURLOPT_FTP_SKIP_PASV_IP \- ignore the IP address in the PASV response
 
 CURLcode curl_easy_setopt(CURL *handle, CURLOPT_FTP_SKIP_PASV_IP, long skip);
 .SH DESCRIPTION
-Pass a long. If \fIskip\fP is set to 1, it instructs libcurl to not use the IP
+Pass a long. If \fIskip\fP is set to 1L, it instructs libcurl to not use the IP
 address the server suggests in its 227-response to libcurl's PASV command when
 libcurl connects the data connection. Instead libcurl will re-use the same IP
 address it already uses for the control connection. But it will use the port
@@ -39,7 +39,7 @@ that due to NATs, firewalls or incompetence report the wrong IP address back.
 
 This option has no effect if PORT, EPRT or EPSV is used instead of PASV.
 .SH DEFAULT
-0
+0L
 .SH PROTOCOLS
 FTP
 .SH EXAMPLE

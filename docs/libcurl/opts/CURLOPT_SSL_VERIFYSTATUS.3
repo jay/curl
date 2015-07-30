@@ -28,7 +28,7 @@ CURLOPT_SSL_VERIFYSTATUS \- verify the certificate's status
 
 CURLcode curl_easy_setopt(CURL *handle, CURLOPT_SSL_VERIFYSTATUS, long verify);
 .SH DESCRIPTION
-Pass a long as parameter set to 1 to enable or 0 to disable.
+Pass a long as parameter set to 1L to enable or 0L to disable.
 
 This option determines whether libcurl verifies the status of the server cert
 using the "Certificate Status Request" TLS extension (aka. OCSP stapling).
@@ -36,7 +36,7 @@ using the "Certificate Status Request" TLS extension (aka. OCSP stapling).
 Note that if this option is enabled but the server does not support the TLS
 extension, the verification will fail.
 .SH DEFAULT
-0
+0L
 .SH PROTOCOLS
 All TLS based protocols: HTTPS, FTPS, IMAPS, POP3, SMTPS etc.
 .SH EXAMPLE

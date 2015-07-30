@@ -30,12 +30,12 @@ CURLOPT_UNRESTRICTED_AUTH \- send credentials to other hosts too
 CURLcode curl_easy_setopt(CURL *handle, CURLOPT_UNRESTRICTED_AUTH,
                           long goahead);
 .SH DESCRIPTION
-A long parameter set to 1 tells libcurl it can continue to send authentication
+A long parameter set to 1L tells libcurl it can continue to send authentication
 (user+password) credentials when following locations, even when hostname
 changed. This option is meaningful only when setting
 \fICURLOPT_FOLLOWLOCATION(3)\fP.
 .SH DEFAULT
-0
+0L
 .SH PROTOCOLS
 HTTP
 .SH EXAMPLE

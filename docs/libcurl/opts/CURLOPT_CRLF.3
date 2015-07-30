@@ -28,13 +28,13 @@ CURLOPT_CRLF \- enable/disable CRLF conversion
 
 CURLcode curl_easy_setopt(CURL *handle, CURLOPT_CRLF, long conv);
 .SH DESCRIPTION
-Pass a long. If the value is set to 1 (one), libcurl converts Unix newlines to
+Pass a long. If the value is set to 1L (one), libcurl converts Unix newlines to
 CRLF newlines on transfers. Disable this option again by setting the value to
-0 (zero).
+0L (zero).
 
 This is a legacy option of questionable use.
 .SH DEFAULT
-0
+0L
 .SH PROTOCOLS
 All
 .SH EXAMPLE

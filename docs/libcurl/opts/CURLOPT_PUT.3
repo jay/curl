@@ -28,14 +28,14 @@ CURLOPT_PUT \- make a HTTP PUT request
 
 CURLcode curl_easy_setopt(CURL *handle, CURLOPT_PUT, long put);
 .SH DESCRIPTION
-A parameter set to 1 tells the library to use HTTP PUT to transfer data. The
+A parameter set to 1L tells the library to use HTTP PUT to transfer data. The
 data should be set with \fICURLOPT_READDATA(3)\fP and
 \fICURLOPT_INFILESIZE(3)\fP.
 
 This option is \fBdeprecated\fP since version 7.12.1. Use
 \fICURLOPT_UPLOAD(3)\fP!
 .SH DEFAULT
-0, disabled
+0L, disabled
 .SH PROTOCOLS
 HTTP
 .SH EXAMPLE

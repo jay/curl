@@ -28,13 +28,13 @@ CURLOPT_FILETIME \- get the modification time of the remote resource
 
 CURLcode curl_easy_setopt(CURL *handle, CURLOPT_FILETIME, long gettime);
 .SH DESCRIPTION
-Pass a long. If it is 1, libcurl will attempt to get the modification time of
+Pass a long. If it is 1L, libcurl will attempt to get the modification time of
 the remote document in this operation. This requires that the remote server
 sends the time or replies to a time querying command. The
 \fIcurl_easy_getinfo(3)\fP function with the \fICURLINFO_FILETIME\fP argument
 can be used after a transfer to extract the received time (if any).
 .SH DEFAULT
-0
+0L
 .SH PROTOCOLS
 HTTP, FTP, SFTP, FILE
 .SH EXAMPLE

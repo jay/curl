@@ -29,7 +29,7 @@ CURLOPT_DNS_USE_GLOBAL_CACHE \- enable/disable global DNS cache
 CURLcode curl_easy_setopt(CURL *handle, CURLOPT_DNS_USE_GLOBAL_CACHE,
                           long enable);
 .SH DESCRIPTION
-Pass a long. If the \fIenable\fP value is 1, it tells curl to use a global DNS
+Pass a long. If the \fIenable\fP value is 1L, it tells curl to use a global DNS
 cache that will survive between easy handle creations and deletions. This is
 not thread-safe and this will use a global variable.
 
@@ -37,7 +37,7 @@ not thread-safe and this will use a global variable.
 to using the share interface instead! See \fICURLOPT_SHARE(3)\fP and
 \fIcurl_share_init(3)\fP.
 .SH DEFAULT
-0
+0L
 .SH PROTOCOLS
 All
 .SH EXAMPLE

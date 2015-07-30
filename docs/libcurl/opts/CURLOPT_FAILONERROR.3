@@ -28,7 +28,7 @@ CURLOPT_FAILONERROR \- request failure on HTTP response >= 400
 
 CURLcode curl_easy_setopt(CURL *handle, CURLOPT_FAILONERROR, long fail);
 .SH DESCRIPTION
-A long parameter set to 1 tells the library to fail the request if the HTTP
+A long parameter set to 1L tells the library to fail the request if the HTTP
 code returned is equal to or larger than 400. The default action would be to
 return the page normally, ignoring that code.
 
@@ -43,7 +43,7 @@ and a 401 or 407 is received immediately afterwards.
 When this option is used and an error is detected, it will cause the
 connection to get closed.
 .SH DEFAULT
-0, do not fail on error
+0L, do not fail on error
 .SH PROTOCOLS
 HTTP
 .SH EXAMPLE

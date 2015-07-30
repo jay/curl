@@ -28,13 +28,13 @@ CURLOPT_CERTINFO \- request SSL certificate information
 
 CURLcode curl_easy_setopt(CURL *handle, CURLOPT_CERTINFO, long certinfo);
 .SH DESCRIPTION
-Pass a long set to 1 to enable libcurl's certificate chain info gatherer. With
+Pass a long set to 1L to enable libcurl's certificate chain info gatherer. With
 this enabled, libcurl will extract lots of information and data about the
 certificates in the certificate chain used in the SSL connection. This data may
 then be retrieved after a transfer using \fIcurl_easy_getinfo(3)\fP and its
 option \fICURLINFO_CERTINFO\fP.
 .SH DEFAULT
-0
+0L
 .SH PROTOCOLS
 All TLS-based
 .SH EXAMPLE

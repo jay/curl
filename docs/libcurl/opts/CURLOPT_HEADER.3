@@ -28,7 +28,7 @@ CURLOPT_HEADER \- pass headers to the data stream
 
 CURLcode curl_easy_setopt(CURL *handle, CURLOPT_HEADER, long onoff);
 .SH DESCRIPTION
-Pass in \fIonoff\fP set to 1 to tell the library to include the header in the
+Pass in \fIonoff\fP set to 1L to tell the library to include the header in the
 body output for requests with this \fIhandle\fP. This option is relevant for
 protocols that actually have headers or other meta-data (like HTTP and FTP).
 
@@ -42,7 +42,7 @@ data separately.
 While named confusingly similar, \fICURLOPT_HTTPHEADER(3)\fP is used to set
 custom HTTP headers!
 .SH DEFAULT
-0
+0L
 .SH PROTOCOLS
 Most
 .SH EXAMPLE

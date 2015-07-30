@@ -29,7 +29,7 @@ CURLOPT_TCP_NODELAY \- set the TCP_NODELAY option
 CURLcode curl_easy_setopt(CURL *handle, CURLOPT_TCP_NODELAY, long nodelay);
 .SH DESCRIPTION
 Pass a long specifying whether the TCP_NODELAY option is to be set or cleared
-(1 = set, 0 = clear). The option is cleared by default. This will have no
+(1L = set, 0L = clear). The option is cleared by default. This will have no
 effect after the connection has been established.
 
 Setting this option will disable TCP's Nagle algorithm. The purpose of this
@@ -43,7 +43,7 @@ need to be sent without delay. This is less efficient than sending larger
 amounts of data at a time, and can contribute to congestion on the network if
 overdone.
 .SH DEFAULT
-0
+0L
 .SH PROTOCOLS
 All
 .SH EXAMPLE

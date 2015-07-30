@@ -32,10 +32,10 @@ CURLcode curl_easy_setopt(CURL *handle, CURLOPT_NEW_FILE_PERMS,
 .SH DESCRIPTION
 Pass a long as a parameter, containing the value of the permissions that will
 be assigned to newly created files on the remote server.  The default value is
-\fI0644\fP, but any valid value can be used.  The only protocols that can use
+\fI0644L\fP, but any valid value can be used.  The only protocols that can use
 this are \fIsftp://\fP, \fIscp://\fP, and \fIfile://\fP.
 .SH DEFAULT
-0644
+0644L
 .SH PROTOCOLS
 SFTP, SCP and FILE
 .SH EXAMPLE

@@ -28,7 +28,7 @@ CURLOPT_UPLOAD \- enable data upload
 
 CURLcode curl_easy_setopt(CURL *handle, CURLOPT_UPLOAD, long upload);
 .SH DESCRIPTION
-The long parameter \fIupload\fP set to 1 tells the library to prepare for and
+The long parameter \fIupload\fP set to 1L tells the library to prepare for and
 perform an upload. The \fICURLOPT_READDATA(3)\fP and
 \fICURLOPT_INFILESIZE(3)\fP or \fICURLOPT_INFILESIZE_LARGE(3)\fP options are
 also interesting for uploads. If the protocol is HTTP, uploading means using
@@ -43,7 +43,7 @@ by adding a header like "Transfer-Encoding: chunked" with
 \fICURLOPT_HTTPHEADER(3)\fP. With HTTP 1.0 or without chunked transfer, you
 must specify the size.
 .SH DEFAULT
-0, default is download
+0L, default is download
 .SH PROTOCOLS
 Most
 .SH EXAMPLE
