@@ -1,0 +1,15 @@
+*.dsp
+*.filters
+*.html
+*.ncb
+*.opensdf
+*.opt
+*.plg
+*.sdf
+*.suo
+*.user
+*.vcproj
+*.vcxproj
+*.vs
+enc_temp_folder/
+ipch/
