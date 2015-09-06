@@ -3733,8 +3733,8 @@ AC_MSG_NOTICE([Configured to build curl/libcurl:
   --libcurl option: ${curl_libcurl_msg}
   Verbose errors:   ${curl_verbose_msg}
   SSPI support:     ${curl_sspi_msg}
-  ca cert bundle:   ${ca}
-  ca cert path:     ${capath}
+  ca cert bundle:   ${ca}    ${ca_warning}
+  ca cert path:     ${capath}    ${capath_warning}
   LDAP support:     ${curl_ldap_msg}
   LDAPS support:    ${curl_ldaps_msg}
   RTSP support:     ${curl_rtsp_msg}
