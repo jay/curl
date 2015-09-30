@@ -2141,6 +2141,7 @@ typedef enum {
   CURLINFO_LOCAL_PORT       = CURLINFO_LONG   + 42,
   CURLINFO_TLS_SESSION      = CURLINFO_SLIST  + 43,
   CURLINFO_ACTIVESOCKET     = CURLINFO_SOCKET + 44,
+  CURLINFO_TLS_SSL_PTR      = CURLINFO_STRING + 45,
   /* Fill in new entries below here! */
 
   CURLINFO_LASTONE          = 44

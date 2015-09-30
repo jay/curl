@@ -111,6 +111,50 @@ static CURLcode getinfo_char(struct SessionHandle *data, CURLINFO info,
   case CURLINFO_RTSP_SESSION_ID:
     *param_charp = data->set.str[STRING_RTSP_SESSION_ID];
     break;
+  case CURLINFO_TLS_SSL_PTR:
+    {
+      void *ptr = NULL;
+      struct connectdata *conn = data->easy_conn;
+
+      if(conn) {
+        unsigned int i;
+        for(i = 0; i < (sizeof(conn->ssl) / sizeof(conn->ssl[0])); ++i) {
+          if(conn->ssl[i].use) {
+#ifdef USE_AXTLS
+            ptr = (void *)conn->ssl[i].ssl;
+#endif
+#ifdef USE_CYASSL
+            ptr = (void *)conn->ssl[i].handle;
+#endif
+#ifdef USE_DARWINSSL
+            ptr = (void *)conn->ssl[i].ssl_ctx;
+#endif
+#ifdef USE_GNUTLS
+            ptr = (void *)conn->ssl[i].session;
+#endif
+#ifdef USE_GSKIT
+            ptr = (void *)conn->ssl[i].handle;
+#endif
+#ifdef USE_NSS
+            ptr = (void *)conn->ssl[i].handle;
+#endif
+#ifdef USE_OPENSSL
+            ptr = (void *)conn->ssl[i].handle;
+#endif
+#ifdef USE_POLARSSL
+            ptr = (void *)&conn->ssl[sockindex].ssn;
+#endif
+#ifdef USE_SCHANNEL
+            ptr = (void *)&conn->ssl[i].ctxt->ctxt_handle;
+#endif
+            break;
+          }
+        }
+      }
+
+      *param_charp = (char *)ptr;
+    }
+    break;
 
   default:
     return CURLE_BAD_FUNCTION_ARGUMENT;

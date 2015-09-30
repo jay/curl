@@ -1,0 +1,70 @@
+.\" **************************************************************************
+.\" *                                  _   _ ____  _
+.\" *  Project                     ___| | | |  _ \| |
+.\" *                             / __| | | | |_) | |
+.\" *                            | (__| |_| |  _ <| |___
+.\" *                             \___|\___/|_| \_\_____|
+.\" *
+.\" * Copyright (C) 1998 - 2015, Daniel Stenberg, <daniel@haxx.se>, et al.
+.\" *
+.\" * This software is licensed as described in the file COPYING, which
+.\" * you should have received as part of this distribution. The terms
+.\" * are also available at http://curl.haxx.se/docs/copyright.html.
+.\" *
+.\" * You may opt to use, copy, modify, merge, publish, distribute and/or sell
+.\" * copies of the Software, and permit persons to whom the Software is
+.\" * furnished to do so, under the terms of the COPYING file.
+.\" *
+.\" * This software is distributed on an "AS IS" basis, WITHOUT WARRANTY OF ANY
+.\" * KIND, either express or implied.
+.\" *
+.\" **************************************************************************
+.\"
+.TH CURLINFO_TLS_SSL_PTR 3 "30 Sep 2015" "libcurl 7.44.0" "curl_easy_getinfo options"
+.SH NAME
+CURLINFO_TLS_SSL_PTR \- get a pointer to the active ("in use") SSL object
+.SH SYNOPSIS
+.nf
+#include <curl/curl.h>
+
+CURLcode curl_easy_getinfo(CURL *handle, CURLINFO_TLS_SSL_PTR, char **ssl);
+.SH DESCRIPTION
+Pass a pointer to a char pointer to receive the pointer to the active ("in
+use") SSL object used by OpenSSL and others. Please note that for internal
+reasons, the value is returned as a char pointer, although effectively being a
+'void *'. On return you would cast it as an SSL pointer. See EXAMPLE.
+
+For GnuTLS, NSS and GSKit SSL backends the pointer returned by this option is
+the same as the 'internals' pointer returned by \fICURLINFO_TLS_SESSION(3)\fP.
+
+.RS
+.IP axTLS
+SSL *
+.IP GnuTLS
+gnutls_session_t
+.IP GSKit
+gsk_handle
+.IP NSS
+PRFileDesc *
+.IP OpenSSL
+SSL *
+.IP PolarSSL
+ssl_session *
+.IP wolfSSL ("CyaSSL")
+SSL *
+.IP Secure Channel ("WinSSL")
+CtxtHandle *
+.IP Secure Transport ("DarwinSSL")
+SSLContext *
+.RE
+.SH PROTOCOLS
+All TLS-based
+.SH EXAMPLE
+TODO
+.SH AVAILABILITY
+Added in 7.46.0
+.SH RETURN VALUE
+Returns CURLE_OK if the option is supported, and CURLE_UNKNOWN_OPTION if not.
+.SH "SEE ALSO"
+.BR curl_easy_getinfo "(3), " curl_easy_setopt "(3), "
+.BR CURLINFO_TLS_SESSION "(3), "
