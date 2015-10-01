@@ -142,7 +142,7 @@ static CURLcode getinfo_char(struct SessionHandle *data, CURLINFO info,
             ptr = (void *)conn->ssl[i].handle;
 #endif
 #ifdef USE_POLARSSL
-            ptr = (void *)&conn->ssl[sockindex].ssn;
+            ptr = (void *)&conn->ssl[i].ssn;
 #endif
 #ifdef USE_SCHANNEL
             ptr = (void *)&conn->ssl[i].ctxt->ctxt_handle;
