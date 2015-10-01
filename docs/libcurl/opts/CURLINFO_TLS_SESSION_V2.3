@@ -20,43 +20,19 @@
 .\" *
 .\" **************************************************************************
 .\"
-.TH CURLINFO_TLS_SSL_PTR 3 "30 Sep 2015" "libcurl 7.44.0" "curl_easy_getinfo options"
+.TH CURLINFO_TLS_SESSION_V2 3 "01 Oct 2015" "libcurl 7.46.0" "curl_easy_getinfo options"
 .SH NAME
-CURLINFO_TLS_SSL_PTR \- get a pointer to the active ("in use") SSL object
+CURLINFO_TLS_SESSION_V2 \- get TLS session info
 .SH SYNOPSIS
 .nf
 #include <curl/curl.h>
 
-CURLcode curl_easy_getinfo(CURL *handle, CURLINFO_TLS_SSL_PTR, char **ssl);
+CURLcode curl_easy_getinfo(CURL *handle, CURLINFO_TLS_SESSION_V2,
+                           struct curl_tlssessioninfo **session);
 .SH DESCRIPTION
-Pass a pointer to a char pointer to receive the pointer to the active ("in
-use") SSL object used by OpenSSL and others. Please note that for internal
-reasons, the value is returned as a char pointer, although effectively being a
-'void *'. On return you would cast it as an SSL pointer. See EXAMPLE.
-
-For GnuTLS, NSS and GSKit SSL backends the pointer returned by this option is
-the same as the 'internals' pointer returned by \fICURLINFO_TLS_SESSION(3)\fP.
-
-.RS
-.IP axTLS
-SSL *
-.IP GnuTLS
-gnutls_session_t
-.IP GSKit
-gsk_handle
-.IP NSS
-PRFileDesc *
-.IP OpenSSL
-SSL *
-.IP PolarSSL
-ssl_session *
-.IP wolfSSL ("CyaSSL")
-SSL *
-.IP Secure Channel ("WinSSL")
-CtxtHandle *
-.IP Secure Transport ("DarwinSSL")
-SSLContext *
-.RE
+This option is the same as \fICURLINFO_TLS_SESSION(3)\fP except that if OpenSSL
+is the SSL backend then the 'internals' member will contain a pointer to SSL
+instead of SSL_CTX.
 .SH PROTOCOLS
 All TLS-based
 .SH EXAMPLE

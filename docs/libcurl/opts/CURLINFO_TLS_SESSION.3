@@ -57,16 +57,34 @@ CURLSSLBACKEND_AXTLS. (Note that the OpenSSL forks are all reported as just
 OpenSSL here.)
 
 The \fIinternals\fP struct member will point to a TLS library specific pointer
-with the following underlying types:
+for the active ("in use") SSL connection, with the following underlying types:
 .RS
-.IP OpenSSL
-SSL_CTX *
 .IP GnuTLS
 gnutls_session_t
-.IP NSS
-PRFileDesc *
 .IP gskit
 gsk_handle
+.IP NSS
+PRFileDesc *
+.IP OpenSSL
+SSL_CTX *
+.RE
+
+Since 7.46.0 it's possible to receive a OpenSSL SSL pointer instead of SSL_CTX
+by using option \fICURLINFO_TLS_SESSION_V2(3)\fP.
+
+Since 7.46.0 the 'internals' member can point to these other SSL backends as
+well:
+.RS
+.IP axTLS
+SSL *
+.IP PolarSSL
+ssl_session *
+.IP Secure Channel ("WinSSL")
+CtxtHandle *
+.IP Secure Transport ("DarwinSSL")
+SSLContext *
+.IP wolfSSL ("CyaSSL")
+SSL *
 .RE
 .SH PROTOCOLS
 All TLS-based
@@ -78,3 +96,4 @@ Added in 7.34.0
 Returns CURLE_OK if the option is supported, and CURLE_UNKNOWN_OPTION if not.
 .SH "SEE ALSO"
 .BR curl_easy_getinfo "(3), " curl_easy_setopt "(3), "
+.BR CURLINFO_TLS_SESSION_V2 "(3), "
