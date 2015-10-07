@@ -30,62 +30,21 @@ CURLINFO_TLS_SESSION \- get TLS session info
 CURLcode curl_easy_getinfo(CURL *handle, CURLINFO_TLS_SESSION,
                            struct curl_tlssessioninfo **session);
 .SH DESCRIPTION
-Pass a pointer to a 'struct curl_tlssessioninfo *'.  The pointer will be
-initialized to refer to a 'struct curl_tlssessioninfo *' that will contain an
-enum indicating the SSL library used for the handshake and the respective
-internal TLS session structure of this underlying SSL library.
+This option has been superseded by \fICURLINFO_TLS_SESSION_V2(3)\fP which was
+added in 7.46.0. The only reason you would use this option instead of V2 is if
+you could be using a version of libcurl earlier than 7.46.0.
 
-This may then be used to extract certificate information in a format
-convenient for further processing, such as manual validation. NOTE: this
-option may not be available for all SSL backends; unsupported SSL backends
-will always return NULL in the \fIinternals\fP pointer to indicate that they
-are not supported.
+This option is exactly the same as \fICURLINFO_TLS_SESSION_V2(3)\fP except in
+the case of OpenSSL. If the session \fIbackend\fP is CURLSSLBACKEND_OPENSSL the
+session \fIinternals\fP pointer varies depending on the option:
 
-.nf
-struct curl_tlssessioninfo {
-  curl_sslbackend backend;
-  void *internals;
-};
-.fi
+CURLINFO_TLS_SESSION OpenSSL session \fIinternals\fP is SSL_CTX *.
 
-The \fIbackend\fP struct member is one of the defines in the CURLSSLBACKEND_*
-series: CURLSSLBACKEND_NONE (when built without TLS support),
-CURLSSLBACKEND_OPENSSL, CURLSSLBACKEND_GNUTLS, CURLSSLBACKEND_NSS,
-CURLSSLBACKEND_GSKIT, CURLSSLBACKEND_POLARSSL, CURLSSLBACKEND_CYASSL,
-CURLSSLBACKEND_SCHANNEL, CURLSSLBACKEND_DARWINSSL or
-CURLSSLBACKEND_AXTLS. (Note that the OpenSSL forks are all reported as just
-OpenSSL here.)
+CURLINFO_TLS_SESSION_V2 OpenSSL session \fIinternals\fP is SSL *.
 
-The \fIinternals\fP struct member will point to a TLS library specific pointer
-for the active ("in use") SSL connection, with the following underlying types:
-.RS
-.IP GnuTLS
-gnutls_session_t
-.IP gskit
-gsk_handle
-.IP NSS
-PRFileDesc *
-.IP OpenSSL
-SSL_CTX *
-.RE
-
-Since 7.46.0 it's possible to receive a OpenSSL SSL pointer instead of SSL_CTX
-by using option \fICURLINFO_TLS_SESSION_V2(3)\fP.
-
-Since 7.46.0 the 'internals' member can point to these other SSL backends as
-well:
-.RS
-.IP axTLS
-SSL *
-.IP PolarSSL
-ssl_session *
-.IP Secure Channel ("WinSSL")
-CtxtHandle *
-.IP Secure Transport ("DarwinSSL")
-SSLContext *
-.IP wolfSSL ("CyaSSL")
-SSL *
-.RE
+You can obtain an SSL_CTX pointer from an SSL pointer using OpenSSL function
+SSL_get_SSL_CTX. Therefore aside from compatibility with older libcurl versions
+of libcurl there's no reason not to use V2.
 .SH PROTOCOLS
 All TLS-based
 .SH EXAMPLE
