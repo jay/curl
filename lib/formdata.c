@@ -830,12 +830,15 @@ static CURLcode AddFormData(struct FormData **formp,
     return CURLE_OUT_OF_MEMORY;
   newform->next = NULL;
 
+  if(length < 0 || *size < 0)
+    return CURLE_BAD_FUNCTION_ARGUMENT;
+
   if(type <= FORM_CONTENT) {
     /* we make it easier for plain strings: */
     if(!length)
       length = strlen((char *)line);
     else if(length >= (size_t)-1)
-      return CURLE_OUT_OF_MEMORY;
+      return CURLE_BAD_FUNCTION_ARGUMENT;
 
     newform->line = malloc((size_t)length+1);
     if(!newform->line) {
@@ -861,17 +864,27 @@ static CURLcode AddFormData(struct FormData **formp,
     *formp = newform;
 
   if(size) {
-    if(type != FORM_FILE)
+    curl_off_t oldsize = *size;
+    if(type != FORM_FILE) {
       /* for static content as well as callback data we add the size given
          as input argument */
       *size += length;
+      if(length && *size <= oldsize) /* overflow */
+        return CURLE_BAD_FUNCTION_ARGUMENT;
+    }
     else {
       /* Since this is a file to be uploaded here, add the size of the actual
          file */
       if(!strequal("-", newform->line)) {
         struct_stat file;
-        if(!stat(newform->line, &file) && !S_ISDIR(file.st_mode))
-          *size += filesize(newform->line, file);
+        if(!stat(newform->line, &file) && !S_ISDIR(file.st_mode)) {
+          curl_off_t fsize = filesize(newform->line, file);
+          if(fsize < 0)
+            return CURLE_FILESIZE_EXCEEDED;
+          *size += fsize;
+          if(fsize && *size <= oldsize) /* overflow */
+            return CURLE_BAD_FUNCTION_ARGUMENT;
+        }
         else
           return CURLE_BAD_FUNCTION_ARGUMENT;
       }
