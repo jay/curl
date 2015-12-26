@@ -60,6 +60,14 @@ tool comes to the rescue:
 
 $ curl-config --libs
 
+If you have both shared and static libcurl installed use --static-libs instead
+of --libs, and to compile you will need to define \fICURL_STATICLIB\fP. That
+define is included in --cflags only if you installed a static-only build of
+libcurl. For example here is how you might build your program and link to a
+static libcurl if you have both shared and static libcurl installed:
+
+$ gcc -o hi hi.c -DCURL_STATICLIB `curl-config --cflags --static-libs`
+
 .IP "SSL or Not"
 libcurl can be built and customized in many ways. One of the things that
 varies from different libraries and builds is the support for SSL-based
