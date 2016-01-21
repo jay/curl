@@ -1577,6 +1577,21 @@ Examples: --negotiate \fI--service-name\fP sockd would use
 sockd/server-name.  (Added in 7.43.0).
 .IP "-S, --show-error"
 When used with \fI-s\fP it makes curl show an error message if it fails.
+.IP "--sni-hostname"
+(SSL) Override the hostname to be sent as server name indication (SNI) if SNI
+is supported by the ClientHello. By default when SNI can be sent curl uses the
+URL's hostname.
+
+When this option is set and host verification is enabled the hostname specified
+here is the name that is checked, and the URL's hostname is ignored.
+
+Currently this option is only available with OpenSSL, and specifically for
+OpenSSL this applies: If the OpenSSL function to set the SNI isn't found or it
+fails when curl calls it then curl will fail and not make the connection. This
+is different from the way curl normally functions. Normally if the OpenSSL SNI
+function does not exist or it fails curl will warn and continue.
+
+(Added in 7.48.0)
 .IP "--ssl"
 (FTP, POP3, IMAP, SMTP) Try to use SSL/TLS for the connection.  Reverts to a
 non-secure connection if the server doesn't support SSL/TLS.  See also

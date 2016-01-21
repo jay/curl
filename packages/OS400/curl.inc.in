@@ -1240,6 +1240,8 @@
      d                 c                   10240
      d  CURLOPT_STREAM_DEPENDS_E...
      d                 c                   10241
+     d  CURLOPT_SNI_HOSTNAME...
+     d                 c                   10242
       *
       /if not defined(CURL_NO_OLDIES)
      d  CURLOPT_FILE   c                   10001

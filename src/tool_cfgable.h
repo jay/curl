@@ -118,6 +118,7 @@ struct OperationConfig {
   char *pubkey;
   char *hostpubmd5;
   char *engine;
+  char *sni_hostname;
   bool crlf;
   char *customrequest;
   char *krblevel;

@@ -1059,19 +1059,28 @@ static CURLcode verifyhost(struct connectdata *conn, X509 *server_cert)
   struct in_addr addr;
 #endif
   CURLcode result = CURLE_OK;
+  const char *dispname, *hostname;
 
-#ifdef ENABLE_IPV6
-  if(conn->bits.ipv6_ip &&
-     Curl_inet_pton(AF_INET6, conn->host.name, &addr)) {
-    target = GEN_IPADD;
-    addrlen = sizeof(struct in6_addr);
+  if(data->set.str[STRING_SNI_HOSTNAME]) {
+    dispname = data->set.str[STRING_SNI_HOSTNAME];
+    hostname = data->set.str[STRING_SNI_HOSTNAME];
   }
-  else
-#endif
-    if(Curl_inet_pton(AF_INET, conn->host.name, &addr)) {
+  else {
+    dispname = conn->host.dispname;
+    hostname = conn->host.name;
+#ifdef ENABLE_IPV6
+    if(conn->bits.ipv6_ip &&
+       Curl_inet_pton(AF_INET6, conn->host.name, &addr)) {
       target = GEN_IPADD;
-      addrlen = sizeof(struct in_addr);
+      addrlen = sizeof(struct in6_addr);
     }
+    else
+#endif
+      if(Curl_inet_pton(AF_INET, conn->host.name, &addr)) {
+        target = GEN_IPADD;
+        addrlen = sizeof(struct in_addr);
+      }
+  }
 
   /* get a "list" of alternative names */
   altnames = X509_get_ext_d2i(server_cert, NID_subject_alt_name, NULL, NULL);
@@ -1110,7 +1119,7 @@ static CURLcode verifyhost(struct connectdata *conn, X509 *server_cert)
           if((altlen == strlen(altptr)) &&
              /* if this isn't true, there was an embedded zero in the name
                 string and we cannot match it. */
-             Curl_cert_hostcheck(altptr, conn->host.name))
+             Curl_cert_hostcheck(altptr, hostname))
             matched = 1;
           else
             matched = 0;
@@ -1132,13 +1141,13 @@ static CURLcode verifyhost(struct connectdata *conn, X509 *server_cert)
 
   if(matched == 1)
     /* an alternative name matched the server hostname */
-    infof(data, "\t subjectAltName: %s matched\n", conn->host.dispname);
+    infof(data, "\t subjectAltName: %s matched\n", dispname);
   else if(matched == 0) {
     /* an alternative name field existed, but didn't match and then
        we MUST fail */
-    infof(data, "\t subjectAltName does not match %s\n", conn->host.dispname);
+    infof(data, "\t subjectAltName does not match %s\n", dispname);
     failf(data, "SSL: no alternative certificate subject name matches "
-          "target host name '%s'", conn->host.dispname);
+          "target host name '%s'", dispname);
     result = CURLE_PEER_FAILED_VERIFICATION;
   }
   else {
@@ -1212,9 +1221,9 @@ static CURLcode verifyhost(struct connectdata *conn, X509 *server_cert)
             "SSL: unable to obtain common name from peer certificate");
       result = CURLE_PEER_FAILED_VERIFICATION;
     }
-    else if(!Curl_cert_hostcheck((const char *)peer_CN, conn->host.name)) {
+    else if(!Curl_cert_hostcheck((const char *)peer_CN, hostname)) {
       failf(data, "SSL: certificate subject name '%s' does not match "
-            "target host name '%s'", peer_CN, conn->host.dispname);
+            "target host name '%s'", peer_CN, dispname);
       result = CURLE_PEER_FAILED_VERIFICATION;
     }
     else {
@@ -1645,11 +1654,6 @@ static CURLcode ossl_connect_step1(struct connectdata *conn, int sockindex)
   long ctx_options;
 #ifdef SSL_CTRL_SET_TLSEXT_HOSTNAME
   bool sni;
-#ifdef ENABLE_IPV6
-  struct in6_addr addr;
-#else
-  struct in_addr addr;
-#endif
 #endif
 
   DEBUGASSERT(ssl_connect_1 == connssl->connecting_state);
@@ -2035,15 +2039,43 @@ static CURLcode ossl_connect_step1(struct connectdata *conn, int sockindex)
 
   connssl->server_cert = 0x0;
 
+/* Set the SNI. If fail and SNI is user-specified then error, else warn. */
 #ifdef SSL_CTRL_SET_TLSEXT_HOSTNAME
-  if((0 == Curl_inet_pton(AF_INET, conn->host.name, &addr)) &&
+  if(sni) {
+    const char *sni_hostname = data->set.str[STRING_SNI_HOSTNAME] ?
+                               data->set.str[STRING_SNI_HOSTNAME] :
+                               conn->host.name;
 #ifdef ENABLE_IPV6
-     (0 == Curl_inet_pton(AF_INET6, conn->host.name, &addr)) &&
+    struct in6_addr addr;
+#else
+    struct in_addr addr;
 #endif
-     sni &&
-     !SSL_set_tlsext_host_name(connssl->handle, conn->host.name))
-    infof(data, "WARNING: failed to configure server name indication (SNI) "
+
+    if(!Curl_inet_pton(AF_INET, sni_hostname, &addr) &&
+#ifdef ENABLE_IPV6
+       !Curl_inet_pton(AF_INET6, sni_hostname, &addr) &&
+#endif
+       !SSL_set_tlsext_host_name(connssl->handle, sni_hostname)) {
+      if(sni_hostname == data->set.str[STRING_SNI_HOSTNAME]) {
+        failf(data, "ERROR: failed to configure server name indication (SNI) "
+              "TLS extension\n");
+        return CURLE_SSL_CONNECT_ERROR;
+      }
+      infof(data, "WARNING: failed to configure server name indication (SNI) "
+            "TLS extension\n");
+    }
+  }
+  else if(data->set.str[STRING_SNI_HOSTNAME]) {
+    failf(data, "ERROR: failed to configure server name indication (SNI) "
           "TLS extension\n");
+    return CURLE_SSL_CONNECT_ERROR;
+  }
+#else
+  if(data->set.str[STRING_SNI_HOSTNAME]) {
+    failf(data, "ERROR: failed to configure server name indication (SNI) "
+          "TLS extension\n");
+    return CURLE_SSL_CONNECT_ERROR;
+  }
 #endif
 
   /* Check if there's a cached ID we can/should use here! */

@@ -1,0 +1,72 @@
+.\" **************************************************************************
+.\" *                                  _   _ ____  _
+.\" *  Project                     ___| | | |  _ \| |
+.\" *                             / __| | | | |_) | |
+.\" *                            | (__| |_| |  _ <| |___
+.\" *                             \___|\___/|_| \_\_____|
+.\" *
+.\" * Copyright (C) 1998 - 2016, Daniel Stenberg, <daniel@haxx.se>, et al.
+.\" *
+.\" * This software is licensed as described in the file COPYING, which
+.\" * you should have received as part of this distribution. The terms
+.\" * are also available at http://curl.haxx.se/docs/copyright.html.
+.\" *
+.\" * You may opt to use, copy, modify, merge, publish, distribute and/or sell
+.\" * copies of the Software, and permit persons to whom the Software is
+.\" * furnished to do so, under the terms of the COPYING file.
+.\" *
+.\" * This software is distributed on an "AS IS" basis, WITHOUT WARRANTY OF ANY
+.\" * KIND, either express or implied.
+.\" *
+.\" **************************************************************************
+.\"
+.TH CURLOPT_SNI_HOSTNAME 3 "20 Jan 2016" "libcurl 7.48.0" "curl_easy_setopt options"
+.SH NAME
+CURLOPT_SNI_HOSTNAME \- the hostname to be sent as server name indication (SNI)
+.SH SYNOPSIS
+#include <curl/curl.h>
+
+CURLcode curl_easy_setopt(CURL *handle, CURLOPT_SNI_HOSTNAME, char *hostname);
+.SH DESCRIPTION
+Override the \fIhostname\fP to be sent as server name indication (SNI) if SNI
+is supported by the ClientHello. When this option is not set (NULL) libcurl
+will use the URL's hostname.
+
+When this option is set and host verification is enabled \fIhostname\fP is the
+name that is checked, and the URL's hostname is ignored. Refer to
+\fICURLOPT_SSL_VERIFYHOST(3)\fP for more information on host verification.
+
+Currently this option is only available with OpenSSL, and specifically for
+OpenSSL this applies: If the OpenSSL function to set the SNI isn't found or it
+fails when libcurl calls it then libcurl will fail and not make the connection.
+This is different from the way libcurl normally functions. Normally if the
+OpenSSL SNI function does not exist or it fails libcurl will warn and continue.
+
+SNI may not be sent depending on a number of factors internal to your SSL
+library, such as whether it was built with SNI support. Another issue is SNI is
+usually only available for TLSv1.0 and above. Technically it may be possible to
+do SNI for SSLv3, however libcurl will disable this if possible. Your SSL
+library however may send the SNI anyway. You should not rely on SNI being sent
+for SSLv3 requests.
+.SH DEFAULT
+NULL
+.SH PROTOCOLS
+All TLS based protocols: HTTPS, FTPS, IMAPS, POP3S, SMTPS etc.
+.SH EXAMPLE
+.nf
+CURL *curl = curl_easy_init();
+if(curl) {
+  curl_easy_setopt(curl, CURLOPT_URL, "https://sni.velox.ch/");
+
+  /* send an SNI of www.whatever.com */
+  curl_easy_setopt(curl, CURLOPT_SNI_HOSTNAME, "www.whatever.com");
+
+  curl_easy_perform(curl);
+}
+.fi
+.SH AVAILABILITY
+OpenSSL only.
+.SH RETURN VALUE
+Returns CURLE_OK if TLS is supported, and CURLE_UNKNOWN_OPTION if not.
+.SH "SEE ALSO"
+.BR CURLOPT_SSL_VERIFYHOST "(3), "

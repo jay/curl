@@ -1673,6 +1673,9 @@ typedef enum {
   /* Set E-xclusive stream dependency on another CURL handle */
   CINIT(STREAM_DEPENDS_E, OBJECTPOINT, 241),
 
+  /* The hostname to be sent as server name indication (SNI) */
+  CINIT(SNI_HOSTNAME, STRINGPOINT, 242),
+
   CURLOPT_LASTENTRY /* the last unused */
 } CURLoption;
 

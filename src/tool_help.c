@@ -200,6 +200,8 @@ static const char *const helptext[] = {
   " -S, --show-error    "
   "Show error. With -s, make curl show errors when they occur",
   " -s, --silent        Silent mode (don't output anything)",
+  "     --sni-hostname  "
+  "hostname to be sent as server name indication (OpenSSL)",
   "     --socks4 HOST[:PORT]  SOCKS4 proxy on given host + port",
   "     --socks4a HOST[:PORT]  SOCKS4a proxy on given host + port",
   "     --socks5 HOST[:PORT]  SOCKS5 proxy on given host + port",
