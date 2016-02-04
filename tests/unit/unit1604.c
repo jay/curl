@@ -40,6 +40,8 @@ static void unit_stop(void)
 
 }
 
+#if defined(MSDOS) || defined(WIN32)
+
 static char *getflagstr(int flags) {
   char *buf = malloc(256);
   fail_unless(buf, "out of memory");
@@ -72,7 +74,6 @@ struct data {
 };
 
 UNITTEST_START
-#if defined(MSDOS) || defined(WIN32)
 
 { /* START sanitize_file_name */
   struct data data[] = {
@@ -296,5 +297,12 @@ UNITTEST_START
   }
 } /* END sanitize_file_name */
 
+#else
+UNITTEST_START
+
+{
+  fprintf(stderr, "Skipped test not for this platform\n");
+}
 #endif /* MSDOS || WIN32 */
+
 UNITTEST_STOP

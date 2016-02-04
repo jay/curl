@@ -85,7 +85,7 @@ __pragma(warning(pop))
 #  include <fcntl.h>                /* _use_lfn(f) prototype */
 #endif
 
-#define MSDOS //TEMPORARY REMOVE ME//TEMPORARY REMOVE ME//TEMPORARY REMOVE ME//TEMPORARY REMOVE ME//TEMPORARY REMOVE ME//TEMPORARY REMOVE ME//TEMPORARY REMOVE ME//TEMPORARY REMOVE ME//TEMPORARY REMOVE ME//TEMPORARY REMOVE ME
+#define MSDOS /* TEMPORARY REMOVE ME//TEMPORARY REMOVE ME//TEMPORARY REMOVE */
 
 #ifndef UNITTESTS
 static CURLcode truncate_dryrun(const char *path, const size_t truncate_pos);
