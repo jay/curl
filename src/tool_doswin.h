@@ -25,7 +25,21 @@
 
 #if defined(MSDOS) || defined(WIN32)
 
-CURLcode sanitize_file_name(char **filename);
+#define SANITIZE_ALLOW_COLONS    (1<<0)  /* Allow colons */
+#define SANITIZE_ALLOW_PATH      (1<<1)  /* Allow path separators and colons */
+#define SANITIZE_ALLOW_RESERVED  (1<<2)  /* Allow reserved device names */
+#define SANITIZE_ALLOW_TRUNCATE  (1<<3)  /* Allow truncating a long filename */
+
+CURLcode sanitize_file_name(char **const sanitized, const char *file_name,
+                            int flags);
+#ifdef UNITTESTS
+CURLcode truncate_dryrun(const char *path, const size_t truncate_pos);
+CURLcode msdosify(char **const sanitized, const char *file_name,
+                  int flags);
+CURLcode rename_if_reserved_dos_device_name(char **const sanitized,
+                                            const char *file_name,
+                                            int flags);
+#endif /* UNITTESTS */
 
 #if defined(MSDOS) && (defined(__DJGPP__) || defined(__GO32__))
 
