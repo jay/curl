@@ -543,7 +543,7 @@ CURLcode rename_if_reserved_dos_device_name(char **const sanitized,
       continue;
     }
     else if(p[x] == ':') {
-      if(!(flags & SANITIZE_ALLOW_COLONS)) {
+      if(!(flags & (SANITIZE_ALLOW_COLONS|SANITIZE_ALLOW_PATH))) {
         p[x] = '_';
         continue;
       }
