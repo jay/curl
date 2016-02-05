@@ -85,8 +85,6 @@ __pragma(warning(pop))
 #  include <fcntl.h>                /* _use_lfn(f) prototype */
 #endif
 
-#define MSDOS /* TEMPORARY REMOVE ME//TEMPORARY REMOVE ME//TEMPORARY REMOVE */
-
 #ifndef UNITTESTS
 static CURLcode truncate_dryrun(const char *path, const size_t truncate_pos);
 #ifdef MSDOS
@@ -495,7 +493,7 @@ CURLcode rename_if_reserved_dos_device_name(char **const sanitized,
   /* Ignore UNC prefixed paths, they are allowed to contain a reserved name. */
 #ifndef MSDOS
   if((flags & SANITIZE_ALLOW_PATH) &&
-     file_name[0] == '\\' && file_name[1] == '\\')) {
+     file_name[0] == '\\' && file_name[1] == '\\') {
     size_t len = strlen(file_name);
     *sanitized = malloc(len + 1);
     if(!*sanitized)
