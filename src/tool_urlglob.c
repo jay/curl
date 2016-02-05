@@ -672,10 +672,11 @@ CURLcode glob_match_url(char **result, char *filename, URLGlob *glob)
 #if defined(MSDOS) || defined(WIN32)
   {
     char *sanitized;
-    CURLcode res = sanitize_file_name(&sanitized, target, SANITIZE_ALLOW_PATH);
+    SANITIZEcode sc = sanitize_file_name(&sanitized, target,
+                                         SANITIZE_ALLOW_PATH);
     Curl_safefree(target);
-    if(res)
-      return res;
+    if(sc)
+      return CURLE_URL_MALFORMAT;
     target = sanitized;
   }
 #endif /* MSDOS || WIN32 */

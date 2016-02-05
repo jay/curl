@@ -86,14 +86,15 @@ __pragma(warning(pop))
 #endif
 
 #ifndef UNITTESTS
-static CURLcode truncate_dryrun(const char *path, const size_t truncate_pos);
+static SANITIZEcode truncate_dryrun(const char *path,
+                                    const size_t truncate_pos);
 #ifdef MSDOS
-static CURLcode msdosify(char **const sanitized, const char *file_name,
-                         int flags);
+static SANITIZEcode msdosify(char **const sanitized, const char *file_name,
+                             int flags);
 #endif
-static CURLcode rename_if_reserved_dos_device_name(char **const sanitized,
-                                                   const char *file_name,
-                                                   int flags);
+static SANITIZEcode rename_if_reserved_dos_device_name(char **const sanitized,
+                                                       const char *file_name,
+                                                       int flags);
 #endif /* !UNITTESTS (static declarations used if no unit tests) */
 
 
@@ -128,11 +129,11 @@ occurs. With this flag the filename --and not any other parts of the path-- may
 be truncated to at least a single character. A filename followed by an
 alternate data stream (ADS) cannot be truncated in any case.
 
-Success: (CURLE_OK) *sanitized points to a sanitized copy of file_name.
-Failure: (!= CURLE_OK) *sanitized is NULL.
+Success: (SANITIZE_ERR_OK) *sanitized points to a sanitized copy of file_name.
+Failure: (!= SANITIZE_ERR_OK) *sanitized is NULL.
 */
-CURLcode sanitize_file_name(char **const sanitized, const char *file_name,
-                            int flags)
+SANITIZEcode sanitize_file_name(char **const sanitized, const char *file_name,
+                                int flags)
 {
   char *p, *target;
   size_t len;
@@ -140,12 +141,12 @@ CURLcode sanitize_file_name(char **const sanitized, const char *file_name,
   size_t max_sanitized_len;
 
   if(!sanitized)
-    return CURLE_BAD_FUNCTION_ARGUMENT;
+    return SANITIZE_ERR_BAD_ARGUMENT;
 
   *sanitized = NULL;
 
   if(!file_name)
-    return CURLE_BAD_FUNCTION_ARGUMENT;
+    return SANITIZE_ERR_BAD_ARGUMENT;
 
   if((flags & SANITIZE_ALLOW_PATH)) {
 #ifndef MSDOS
@@ -167,14 +168,14 @@ CURLcode sanitize_file_name(char **const sanitized, const char *file_name,
   if(len > max_sanitized_len) {
     if(!(flags & SANITIZE_ALLOW_TRUNCATE) ||
        truncate_dryrun(file_name, max_sanitized_len))
-      return CURLE_LOCAL_PATH_INVALID;
+      return SANITIZE_ERR_INVALID_PATH;
 
     len = max_sanitized_len;
   }
 
   target = malloc(len + 1);
   if(!target)
-    return CURLE_OUT_OF_MEMORY;
+    return SANITIZE_ERR_OUT_OF_MEMORY;
 
   strncpy(target, file_name, len);
   target[len] = '\0';
@@ -226,7 +227,7 @@ CURLcode sanitize_file_name(char **const sanitized, const char *file_name,
 
   if(len > max_sanitized_len) {
     free(target);
-    return CURLE_LOCAL_PATH_INVALID;
+    return SANITIZE_ERR_INVALID_PATH;
   }
 #endif
 
@@ -240,12 +241,12 @@ CURLcode sanitize_file_name(char **const sanitized, const char *file_name,
 
     if(len > max_sanitized_len) {
       free(target);
-      return CURLE_LOCAL_PATH_INVALID;
+      return SANITIZE_ERR_INVALID_PATH;
     }
   }
 
   *sanitized = target;
-  return CURLE_OK;
+  return SANITIZE_ERR_OK;
 }
 
 
@@ -270,27 +271,27 @@ Bad truncate_pos 1:     C:\foo\     =>  C
   like C:superlongfilename can't be truncated.
 
 Returns
-CURLE_OK: Good -- 'path' can be truncated
-CURLE_LOCAL_PATH_INVALID: Bad -- 'path' cannot be truncated
-!= CURLE_OK && != CURLE_LOCAL_PATH_INVALID: Error
+SANITIZE_ERR_OK: Good -- 'path' can be truncated
+SANITIZE_ERR_INVALID_PATH: Bad -- 'path' cannot be truncated
+!= SANITIZE_ERR_OK && != SANITIZE_ERR_INVALID_PATH: Error
 */
-CURLcode truncate_dryrun(const char *path, const size_t truncate_pos)
+SANITIZEcode truncate_dryrun(const char *path, const size_t truncate_pos)
 {
   size_t len;
 
   if(!path)
-    return CURLE_BAD_FUNCTION_ARGUMENT;
+    return SANITIZE_ERR_BAD_ARGUMENT;
 
   len = strlen(path);
 
   if(truncate_pos > len)
-    return CURLE_BAD_FUNCTION_ARGUMENT;
+    return SANITIZE_ERR_BAD_ARGUMENT;
 
   if(!len || !truncate_pos)
-    return CURLE_LOCAL_PATH_INVALID;
+    return SANITIZE_ERR_INVALID_PATH;
 
   if(strpbrk(&path[truncate_pos - 1], "\\/:"))
-    return CURLE_LOCAL_PATH_INVALID;
+    return SANITIZE_ERR_INVALID_PATH;
 
   /* C:\foo can be truncated but C:\foo:ads can't */
   if(truncate_pos > 1) {
@@ -298,11 +299,11 @@ CURLcode truncate_dryrun(const char *path, const size_t truncate_pos)
     do {
       --p;
       if(*p == ':')
-        return CURLE_LOCAL_PATH_INVALID;
+        return SANITIZE_ERR_INVALID_PATH;
     } while(p != path && *p != '\\' && *p != '/');
   }
 
-  return CURLE_OK;
+  return SANITIZE_ERR_OK;
 }
 
 /* The functions msdosify, rename_if_dos_device_name and __crt0_glob_function
@@ -320,12 +321,12 @@ that some path information may pass through. For example drive letter names
 (C:, D:, etc) are allowed to pass through. For sanitizing a filename use
 sanitize_file_name.
 
-Success: (CURLE_OK) *sanitized points to a sanitized copy of file_name.
-Failure: (!= CURLE_OK) *sanitized is NULL.
+Success: (SANITIZE_ERR_OK) *sanitized points to a sanitized copy of file_name.
+Failure: (!= SANITIZE_ERR_OK) *sanitized is NULL.
 */
 #if defined(MSDOS) || defined(UNITTESTS)
-CURLcode msdosify(char **const sanitized, const char *file_name,
-                         int flags)
+SANITIZEcode msdosify(char **const sanitized, const char *file_name,
+                      int flags)
 {
   char dos_name[PATH_MAX];
   static const char illegal_chars_dos[] = ".+, ;=[]" /* illegal in DOS */
@@ -339,17 +340,17 @@ CURLcode msdosify(char **const sanitized, const char *file_name,
   size_t len = sizeof(illegal_chars_dos) - 1;
 
   if(!sanitized)
-    return CURLE_BAD_FUNCTION_ARGUMENT;
+    return SANITIZE_ERR_BAD_ARGUMENT;
 
   *sanitized = NULL;
 
   if(!file_name)
-    return CURLE_BAD_FUNCTION_ARGUMENT;
+    return SANITIZE_ERR_BAD_ARGUMENT;
 
   if(strlen(file_name) > PATH_MAX-1 &&
      (!(flags & SANITIZE_ALLOW_TRUNCATE) ||
       truncate_dryrun(file_name, PATH_MAX-1)))
-    return CURLE_LOCAL_PATH_INVALID;
+    return SANITIZE_ERR_INVALID_PATH;
 
   /* Support for Windows 9X VFAT systems, when available. */
   if(_use_lfn(file_name)) {
@@ -450,11 +451,11 @@ CURLcode msdosify(char **const sanitized, const char *file_name,
        or truncating the entire filename is not allowed. */
     if(!(flags & SANITIZE_ALLOW_TRUNCATE) || strpbrk(s, "\\/:") ||
        truncate_dryrun(dos_name, d - dos_name))
-      return CURLE_LOCAL_PATH_INVALID;
+      return SANITIZE_ERR_INVALID_PATH;
   }
 
   *sanitized = strdup(dos_name);
-  return (*sanitized ? CURLE_OK : CURLE_OUT_OF_MEMORY);
+  return (*sanitized ? SANITIZE_ERR_OK : SANITIZE_ERR_OUT_OF_MEMORY);
 }
 #endif /* MSDOS || UNITTESTS */
 
@@ -468,27 +469,29 @@ that some path information may pass through. For example drive letter names
 (C:, D:, etc) are allowed to pass through. For sanitizing a filename use
 sanitize_file_name.
 
-Success: (CURLE_OK) *sanitized points to a sanitized copy of file_name.
-Failure: (!= CURLE_OK) *sanitized is NULL.
+Success: (SANITIZE_ERR_OK) *sanitized points to a sanitized copy of file_name.
+Failure: (!= SANITIZE_ERR_OK) *sanitized is NULL.
 */
-CURLcode rename_if_reserved_dos_device_name(char **const sanitized,
-                                            const char *file_name,
-                                            int flags)
+SANITIZEcode rename_if_reserved_dos_device_name(char **const sanitized,
+                                                const char *file_name,
+                                                int flags)
 {
   /* We could have a file whose name is a device on MS-DOS.  Trying to
    * retrieve such a file would fail at best and wedge us at worst.  We need
    * to rename such files. */
   char *p, *base;
-  struct_stat st_buf;
   char fname[PATH_MAX];
+#ifdef MSDOS
+  struct_stat st_buf;
+#endif
 
   if(!sanitized)
-    return CURLE_BAD_FUNCTION_ARGUMENT;
+    return SANITIZE_ERR_BAD_ARGUMENT;
 
   *sanitized = NULL;
 
   if(!file_name)
-    return CURLE_BAD_FUNCTION_ARGUMENT;
+    return SANITIZE_ERR_BAD_ARGUMENT;
 
   /* Ignore UNC prefixed paths, they are allowed to contain a reserved name. */
 #ifndef MSDOS
@@ -497,16 +500,16 @@ CURLcode rename_if_reserved_dos_device_name(char **const sanitized,
     size_t len = strlen(file_name);
     *sanitized = malloc(len + 1);
     if(!*sanitized)
-      return CURLE_OUT_OF_MEMORY;
+      return SANITIZE_ERR_OUT_OF_MEMORY;
     strncpy(*sanitized, file_name, len + 1);
-    return CURLE_OK;
+    return SANITIZE_ERR_OK;
   }
 #endif
 
   if(strlen(file_name) > PATH_MAX-1 &&
      (!(flags & SANITIZE_ALLOW_TRUNCATE) ||
       truncate_dryrun(file_name, PATH_MAX-1)))
-    return CURLE_LOCAL_PATH_INVALID;
+    return SANITIZE_ERR_INVALID_PATH;
 
   strncpy(fname, file_name, PATH_MAX-1);
   fname[PATH_MAX-1] = '\0';
@@ -557,7 +560,7 @@ CURLcode rename_if_reserved_dos_device_name(char **const sanitized,
     if(strlen(fname) == PATH_MAX-1) {
       --p_len;
       if(!(flags & SANITIZE_ALLOW_TRUNCATE) || truncate_dryrun(p, p_len))
-        return CURLE_LOCAL_PATH_INVALID;
+        return SANITIZE_ERR_INVALID_PATH;
       p[p_len] = '\0';
     }
     memmove(p + 1, p, p_len + 1);
@@ -583,7 +586,7 @@ CURLcode rename_if_reserved_dos_device_name(char **const sanitized,
       if(strlen(fname) == PATH_MAX-1) {
         --blen;
         if(!(flags & SANITIZE_ALLOW_TRUNCATE) || truncate_dryrun(base, blen))
-          return CURLE_LOCAL_PATH_INVALID;
+          return SANITIZE_ERR_INVALID_PATH;
         base[blen] = '\0';
       }
       memmove(base + 1, base, blen + 1);
@@ -594,7 +597,7 @@ CURLcode rename_if_reserved_dos_device_name(char **const sanitized,
 #endif
 
   *sanitized = strdup(fname);
-  return (*sanitized ? CURLE_OK : CURLE_OUT_OF_MEMORY);
+  return (*sanitized ? SANITIZE_ERR_OK : SANITIZE_ERR_OUT_OF_MEMORY);
 }
 
 #if defined(MSDOS) && (defined(__DJGPP__) || defined(__GO32__))

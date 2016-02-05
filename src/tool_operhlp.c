@@ -155,10 +155,10 @@ CURLcode get_url_file_name(char **filename, const char *url)
 #if defined(MSDOS) || defined(WIN32)
   {
     char *sanitized;
-    CURLcode res = sanitize_file_name(&sanitized, *filename, 0);
+    SANITIZEcode sc = sanitize_file_name(&sanitized, *filename, 0);
     Curl_safefree(*filename);
-    if(res)
-      return res;
+    if(sc)
+      return CURLE_URL_MALFORMAT;
     *filename = sanitized;
   }
 #endif /* MSDOS || WIN32 */

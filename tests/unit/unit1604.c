@@ -32,7 +32,7 @@
 
 static CURLcode unit_setup(void)
 {
-  return CURLE_OK;
+  return SANITIZE_ERR_OK;
 }
 
 static void unit_stop(void)
@@ -57,10 +57,10 @@ static char *getcurlcodestr(int cc) {
   char *buf = malloc(256);
   fail_unless(buf, "out of memory");
   sprintf(buf, "%s (%d)",
-    (cc == CURLE_OK ? "CURLE_OK" :
-     cc == CURLE_BAD_FUNCTION_ARGUMENT ? "CURLE_BAD_FUNCTION_ARGUMENT" :
-     cc == CURLE_LOCAL_PATH_INVALID ? "CURLE_LOCAL_PATH_INVALID" :
-     cc == CURLE_OUT_OF_MEMORY ? "CURLE_OUT_OF_MEMORY" :
+    (cc == SANITIZE_ERR_OK ? "SANITIZE_ERR_OK" :
+     cc == SANITIZE_ERR_BAD_ARGUMENT ? "SANITIZE_ERR_BAD_ARGUMENT" :
+     cc == SANITIZE_ERR_INVALID_PATH ? "SANITIZE_ERR_INVALID_PATH" :
+     cc == SANITIZE_ERR_OUT_OF_MEMORY ? "SANITIZE_ERR_OUT_OF_MEMORY" :
      "unexpected error code - add name"),
     cc);
   return buf;
@@ -78,100 +78,100 @@ UNITTEST_START
 { /* START sanitize_file_name */
   struct data data[] = {
     { "", 0,
-      "", CURLE_OK
+      "", SANITIZE_ERR_OK
     },
     { "normal filename", 0,
-      "normal filename", CURLE_OK
+      "normal filename", SANITIZE_ERR_OK
     },
     { "control\tchar", 0,
-      "control_char", CURLE_OK
+      "control_char", SANITIZE_ERR_OK
     },
     { "banned*char", 0,
-      "banned_char", CURLE_OK
+      "banned_char", SANITIZE_ERR_OK
     },
     { "f:foo", 0,
-      "f_foo", CURLE_OK
+      "f_foo", SANITIZE_ERR_OK
     },
     { "f:foo", SANITIZE_ALLOW_COLONS,
-      "f:foo", CURLE_OK
+      "f:foo", SANITIZE_ERR_OK
     },
     { "f:foo", SANITIZE_ALLOW_PATH,
-      "f:foo", CURLE_OK
+      "f:foo", SANITIZE_ERR_OK
     },
     { "f:\\foo", 0,
-      "f__foo", CURLE_OK
+      "f__foo", SANITIZE_ERR_OK
     },
     { "f:\\foo", SANITIZE_ALLOW_PATH,
-      "f:\\foo", CURLE_OK
+      "f:\\foo", SANITIZE_ERR_OK
     },
     { "f:/foo", 0,
-      "f__foo", CURLE_OK
+      "f__foo", SANITIZE_ERR_OK
     },
     { "f:/foo", SANITIZE_ALLOW_PATH,
-      "f:/foo", CURLE_OK
+      "f:/foo", SANITIZE_ERR_OK
     },
     { "foo:bar", 0,
-      "foo_bar", CURLE_OK
+      "foo_bar", SANITIZE_ERR_OK
     },
     { "foo|<>/bar\\\":?*baz", 0,
-      "foo____bar_____baz", CURLE_OK
+      "foo____bar_____baz", SANITIZE_ERR_OK
     },
     { "f:foo::$DATA", 0,
-      "f_foo__$DATA", CURLE_OK
+      "f_foo__$DATA", SANITIZE_ERR_OK
     },
     { "con . air", 0,
-      "con _ air", CURLE_OK
+      "con _ air", SANITIZE_ERR_OK
     },
     { "con.air", 0,
-      "con_air", CURLE_OK
+      "con_air", SANITIZE_ERR_OK
     },
     { "con:/x", 0,
-      "con__x", CURLE_OK
+      "con__x", SANITIZE_ERR_OK
     },
     { "file . . . .  ..  .", 0,
-      "file", CURLE_OK
+      "file", SANITIZE_ERR_OK
     },
     { "foo . . ? . . ", 0,
-      "foo . . _", CURLE_OK
+      "foo . . _", SANITIZE_ERR_OK
     },
     { "com1", 0,
-      "_com1", CURLE_OK
+      "_com1", SANITIZE_ERR_OK
     },
     { "com1", SANITIZE_ALLOW_RESERVED,
-      "com1", CURLE_OK
+      "com1", SANITIZE_ERR_OK
     },
     { "f:\\com1", 0,
-      "f__com1", CURLE_OK
+      "f__com1", SANITIZE_ERR_OK
     },
     { "f:\\com1", SANITIZE_ALLOW_PATH,
-      "f:\\_com1", CURLE_OK
+      "f:\\_com1", SANITIZE_ERR_OK
     },
     { "f:\\com1", SANITIZE_ALLOW_RESERVED,
-      "f__com1", CURLE_OK
+      "f__com1", SANITIZE_ERR_OK
     },
     { "f:\\com1", SANITIZE_ALLOW_RESERVED | SANITIZE_ALLOW_COLONS,
-      "f:_com1", CURLE_OK
+      "f:_com1", SANITIZE_ERR_OK
     },
     { "f:\\com1", SANITIZE_ALLOW_RESERVED | SANITIZE_ALLOW_PATH,
-      "f:\\com1", CURLE_OK
+      "f:\\com1", SANITIZE_ERR_OK
     },
     { "com1:\\com1", SANITIZE_ALLOW_PATH,
-      "_com1:\\_com1", CURLE_OK
+      "_com1:\\_com1", SANITIZE_ERR_OK
     },
     { "com1:\\com1", SANITIZE_ALLOW_RESERVED | SANITIZE_ALLOW_PATH,
-      "com1:\\com1", CURLE_OK
+      "com1:\\com1", SANITIZE_ERR_OK
     },
     { "com1:\\com1", SANITIZE_ALLOW_RESERVED,
-      "com1__com1", CURLE_OK
+      "com1__com1", SANITIZE_ERR_OK
     },
     { "CoM1", 0,
-      "_CoM1", CURLE_OK
+      "_CoM1", SANITIZE_ERR_OK
     },
     { "CoM1", SANITIZE_ALLOW_RESERVED,
-      "CoM1", CURLE_OK
+      "CoM1", SANITIZE_ERR_OK
     },
     { "COM56", 0,
-      "COM56", CURLE_OK
+      "COM56", SANITIZE_ERR_OK
     },
     /* At the moment we expect a maximum path length of 259. I assume MSDOS
        has variable max path lengths depending on compiler that are shorter
@@ -189,7 +189,7 @@ UNITTEST_START
       "CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC"
       "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
       "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE"
-      "FFFFF", CURLE_OK
+      "FFFFF", SANITIZE_ERR_OK
     },
     { "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
       "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB"
@@ -203,7 +203,7 @@ UNITTEST_START
       "CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC"
       "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
       "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE"
-      "FFF\\FFFFF", CURLE_OK
+      "FFF\\FFFFF", SANITIZE_ERR_OK
     },
     { "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
       "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB"
@@ -217,7 +217,7 @@ UNITTEST_START
       "CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC"
       "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
       "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE"
-      "FFF_F", CURLE_OK
+      "FFF_F", SANITIZE_ERR_OK
     },
 #endif /* !MSDOS */
     { "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
@@ -227,7 +227,7 @@ UNITTEST_START
       "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE"
       "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF",
         0,
-      NULL, CURLE_LOCAL_PATH_INVALID
+      NULL, SANITIZE_ERR_INVALID_PATH
     },
     { "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
       "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB"
@@ -236,7 +236,7 @@ UNITTEST_START
       "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE"
       "FFFF\\FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF",
         SANITIZE_ALLOW_TRUNCATE,
-      NULL, CURLE_LOCAL_PATH_INVALID
+      NULL, SANITIZE_ERR_INVALID_PATH
     },
     { "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
       "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB"
@@ -245,7 +245,7 @@ UNITTEST_START
       "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE"
       "FFFFFFFFFFFFFFFFFFFFFFFFF\\FFFFFFFFFFFFFFFFFFFFFFFF",
         SANITIZE_ALLOW_TRUNCATE | SANITIZE_ALLOW_PATH,
-      NULL, CURLE_LOCAL_PATH_INVALID
+      NULL, SANITIZE_ERR_INVALID_PATH
     },
     { "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
       "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB"
@@ -254,7 +254,7 @@ UNITTEST_START
       "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE"
       "FFF\\FFFFFFFFFFFFFFFFFFFFF:FFFFFFFFFFFFFFFFFFFFFFFF",
         SANITIZE_ALLOW_TRUNCATE | SANITIZE_ALLOW_PATH,
-      NULL, CURLE_LOCAL_PATH_INVALID
+      NULL, SANITIZE_ERR_INVALID_PATH
     },
     { "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
       "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB"
@@ -263,10 +263,10 @@ UNITTEST_START
       "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE"
       "FF\\F:FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF",
         SANITIZE_ALLOW_TRUNCATE | SANITIZE_ALLOW_PATH,
-      NULL, CURLE_LOCAL_PATH_INVALID
+      NULL, SANITIZE_ERR_INVALID_PATH
     },
     { NULL, 0,
-      NULL, CURLE_BAD_FUNCTION_ARGUMENT
+      NULL, SANITIZE_ERR_BAD_ARGUMENT
     },
   };
 

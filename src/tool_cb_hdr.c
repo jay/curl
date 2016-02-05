@@ -204,9 +204,9 @@ static char *parse_filename(const char *ptr, size_t len)
 #if defined(MSDOS) || defined(WIN32)
   {
     char *sanitized;
-    CURLcode res = sanitize_file_name(&sanitized, copy, 0);
+    SANITIZEcode sc = sanitize_file_name(&sanitized, copy, 0);
     Curl_safefree(copy);
-    if(res)
+    if(sc)
       return NULL;
     copy = sanitized;
   }

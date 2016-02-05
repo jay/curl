@@ -535,7 +535,6 @@ typedef enum {
   CURLE_SSL_PINNEDPUBKEYNOTMATCH, /* 90 - specified pinned public key did not
                                      match */
   CURLE_SSL_INVALIDCERTSTATUS,   /* 91 - invalid certificate status */
-  CURLE_LOCAL_PATH_INVALID,      /* 92 - a local path is invalid */
   CURL_LAST /* never use! */
 } CURLcode;
 

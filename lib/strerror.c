@@ -305,9 +305,6 @@ curl_easy_strerror(CURLcode error)
   case CURLE_SSL_INVALIDCERTSTATUS:
     return "SSL server certificate status verification FAILED";
 
-  case CURLE_LOCAL_PATH_INVALID:
-    return "A local path is invalid.";
-
     /* error codes not used by current libcurl */
   case CURLE_OBSOLETE20:
   case CURLE_OBSOLETE24:
