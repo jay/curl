@@ -474,8 +474,8 @@ Success: (CURLE_OK) *sanitized points to a sanitized copy of file_name.
 Failure: (!= CURLE_OK) *sanitized is NULL.
 */
 CURLcode rename_if_reserved_dos_device_name(char **const sanitized,
-                                                   const char *file_name,
-                                                   int flags)
+                                            const char *file_name,
+                                            int flags)
 {
   /* We could have a file whose name is a device on MS-DOS.  Trying to
    * retrieve such a file would fail at best and wedge us at worst.  We need
