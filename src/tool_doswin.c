@@ -669,6 +669,102 @@ CURLcode FindWin32CACert(struct OperationConfig *config,
   return result;
 }
 
+/*
+Retrieve UTF-8 encoded arguments from the command line.
+
+To free: free each pointer in the array and then the pointer to the array.
+
+Success: (!= 0) The count of args in the UTF-8 array pointed to by *argv.
+Failure: (0) *argv is NULL.
+*/
+int GetUTF8ArgsFromCmdline(char ***const argv)
+{
+#if (_WIN32_WINNT < _WIN32_WINNT_WINXP)
+  **argv = NULL;
+  return 0;
+#else
+  int w_argc = 0;
+  wchar_t **w_argv = NULL;
+  wchar_t *cmdline = NULL;
+  HMODULE shell32 = NULL;
+  LPWSTR *(WINAPI *CommandLineToArgvW)(LPCWSTR, int *) = NULL;
+
+  *argv = NULL;
+
+  if((shell32 = LoadLibraryA("shell32")) &&
+     (CommandLineToArgvW = (LPWSTR *(WINAPI *)(LPCWSTR, int *))
+        GetProcAddress(shell32, "CommandLineToArgvW")) &&
+     (cmdline = GetCommandLineW()) && *cmdline &&
+     (w_argv = CommandLineToArgvW(cmdline, &w_argc)) && w_argc &&
+     (*argv = malloc(sizeof(char *) * (w_argc + 1)))) {
+    int i;
+    for(i = 0; i < w_argc; ++i) {
+      if(!((*argv)[i] = Curl_convert_wchar_to_UTF8(w_argv[i])))
+        break;
+    }
+    if(i == w_argc)
+      (*argv)[i] = NULL;
+    else {
+      while(i)
+        free((*argv)[--i]);
+      free(*argv);
+      *argv = NULL;
+    }
+  }
+  if(shell32)
+    FreeLibrary(shell32);
+  if(w_argv)
+    LocalFree(w_argv);
+
+  return *argv ? w_argc : 0;
+#endif /* >= XP */
+}
+
+FILE *win32_fopen(const char *filename, const char *mode)
+{
+  if(g_curl_tool_args_are_utf8 && filename && *filename && mode && *mode) {
+    /* filename might be UTF-8 from the command line */
+    const wchar_t *filename_w = Curl_convert_UTF8_to_wchar(filename);
+    const wchar_t *mode_w = Curl_convert_UTF8_to_wchar(mode);
+    if(filename_w && mode_w)
+      return _wfopen(filename_w, mode_w);
+  }
+  return (fopen)(filename, mode);
+}
+
+int win32_stat(const char *path, struct _stat *buffer)
+{
+  if(g_curl_tool_args_are_utf8 && path) {
+    /* path might be UTF-8 from the command line */
+    const wchar_t *path_w = Curl_convert_UTF8_to_wchar(path);
+    if(path_w)
+      return _wstat(path_w, buffer);
+  }
+  return (_stat)(path, buffer);
+}
+
+int win32_stat64(const char *path, struct __stat64 *buffer)
+{
+  if(g_curl_tool_args_are_utf8 && path) {
+    /* path might be UTF-8 from the command line */
+    const wchar_t *path_w = Curl_convert_UTF8_to_wchar(path);
+    if(path_w)
+      return _wstat64(path_w, buffer);
+  }
+  return (_stat64)(path, buffer);
+}
+
+int win32_stati64(const char *path, struct _stati64 *buffer)
+{
+  if(g_curl_tool_args_are_utf8 && path) {
+    /* path might be UTF-8 from the command line */
+    const wchar_t *path_w = Curl_convert_UTF8_to_wchar(path);
+    if(path_w)
+      return _wstati64(path_w, buffer);
+  }
+  return (_stati64)(path, buffer);
+}
+
 #endif /* WIN32 */
 
 #endif /* MSDOS || WIN32 */

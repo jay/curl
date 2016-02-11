@@ -2386,6 +2386,19 @@ CURL_EXTERN CURLcode curl_easy_pause(CURL *handle, int bitmask);
 #define CURLPAUSE_ALL       (CURLPAUSE_RECV|CURLPAUSE_SEND)
 #define CURLPAUSE_CONT      (CURLPAUSE_RECV_CONT|CURLPAUSE_SEND_CONT)
 
+/*
+ * NAME g_curl_tool_args_are_utf8
+ *
+ * DESCRIPTION
+ *
+ * Set this TRUE or FALSE depending on whether the curl tool's args are UTF-8.
+ *
+ */
+CURL_EXTERN int g_curl_tool_args_are_utf8;
+
+CURL_EXTERN wchar_t *Curl_convert_UTF8_to_wchar(const char *str_utf8);
+CURL_EXTERN char *Curl_convert_wchar_to_UTF8(const wchar_t *str_w);
+
 #ifdef  __cplusplus
 }
 #endif

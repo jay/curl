@@ -38,6 +38,7 @@
 
 #include "tool_cfgable.h"
 #include "tool_convert.h"
+#include "tool_doswin.h"
 #include "tool_msgs.h"
 #include "tool_operate.h"
 #include "tool_panykey.h"
@@ -235,6 +236,19 @@ int main(int argc, char *argv[])
   struct GlobalConfig global;
   memset(&global, 0, sizeof(global));
 
+  /* WIN32: Get UTF-8 encoded args if available */
+#ifdef WIN32
+  {
+    char **args;
+    int count = GetUTF8ArgsFromCmdline(&args);
+    if(count) {
+      argc = count;
+      argv = args;
+      g_curl_tool_args_are_utf8 = true;
+    }
+  }
+#endif
+
   main_checkfds();
 
 #if defined(HAVE_SIGNAL) && defined(SIGPIPE)
@@ -263,6 +277,15 @@ int main(int argc, char *argv[])
 #ifdef __NOVELL_LIBC__
   if(getenv("_IN_NETWARE_BASH_") == NULL)
     tool_pressanykey();
+#endif
+
+#ifdef WIN32
+  if(g_curl_tool_args_are_utf8) {
+    int i;
+    for(i = 0; i < argc; ++i)
+      free(argv[i]);
+    free(argv);
+  }
 #endif
 
 #ifdef __VMS

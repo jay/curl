@@ -358,7 +358,7 @@
 #  undef  fstat
 #  define fstat(fdes,stp)            _fstati64(fdes, stp)
 #  undef  stat
-#  define stat(fname,stp)            _stati64(fname, stp)
+#  define stat(fname,stp)            win32_stati64(fname, stp)
 #  define struct_stat                struct _stati64
 #  define LSEEK_ERROR                (__int64)-1
 #endif
@@ -375,7 +375,7 @@
 #    undef  lseek
 #    define lseek(fdes,offset,whence)  _lseek(fdes, (long)offset, whence)
 #    define fstat(fdes,stp)            _fstat(fdes, stp)
-#    define stat(fname,stp)            _stat(fname, stp)
+#    define stat(fname,stp)            win32_stat(fname, stp)
 #    define struct_stat                struct _stat
 #  endif
 #  define LSEEK_ERROR                (long)-1
@@ -720,6 +720,17 @@ endings either CRLF or LF so 't' is appropriate.
 #else
 #define FOPEN_READTEXT "r"
 #define FOPEN_WRITETEXT "w"
+#endif
+
+#ifdef WIN32
+#ifdef fopen
+#error problem
+#endif
+#define fopen win32_fopen
+FILE *win32_fopen(const char *filename, const char *mode);
+int win32_stat(const char *path, struct _stat *buffer);
+int win32_stat64(const char *path, struct __stat64 *buffer);
+int win32_stati64(const char *path, struct _stati64 *buffer);
 #endif
 
 #endif /* HEADER_CURL_SETUP_H */

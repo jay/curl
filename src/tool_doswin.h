@@ -60,6 +60,8 @@ char **__crt0_glob_function(char *arg);
 CURLcode FindWin32CACert(struct OperationConfig *config,
                          const char *bundle_file);
 
+int GetUTF8ArgsFromCmdline(char ***const argv);
+
 #endif /* WIN32 */
 
 #endif /* MSDOS || WIN32 */

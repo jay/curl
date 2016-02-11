@@ -22,8 +22,7 @@
 
 #include "curl_setup.h"
 
-#if defined(USE_WIN32_IDN) || ((defined(USE_WINDOWS_SSPI) || \
-                                defined(USE_WIN32_LDAP)) && defined(UNICODE))
+#ifdef WIN32
 
  /*
   * MultiByte conversions using Windows kernel32 library.
@@ -79,4 +78,49 @@ char *Curl_convert_wchar_to_UTF8(const wchar_t *str_w)
   return str_utf8;
 }
 
-#endif /* USE_WIN32_IDN || ((USE_WINDOWS_SSPI || USE_WIN32_LDAP) && UNICODE) */
+FILE *win32_fopen(const char *filename, const char *mode)
+{
+  if(g_curl_tool_args_are_utf8 && filename && *filename && mode && *mode) {
+    /* filename might be UTF-8 from the command line */
+    const wchar_t *filename_w = Curl_convert_UTF8_to_wchar(filename);
+    const wchar_t *mode_w = Curl_convert_UTF8_to_wchar(mode);
+    if(filename_w && mode_w)
+      return _wfopen(filename_w, mode_w);
+  }
+  return (fopen)(filename, mode);
+}
+
+int win32_stat(const char *path, struct _stat *buffer)
+{
+  if(g_curl_tool_args_are_utf8 && path) {
+    /* path might be UTF-8 from the command line */
+    const wchar_t *path_w = Curl_convert_UTF8_to_wchar(path);
+    if(path_w)
+      return _wstat(path_w, buffer);
+  }
+  return (_stat)(path, buffer);
+}
+
+int win32_stat64(const char *path, struct __stat64 *buffer)
+{
+  if(g_curl_tool_args_are_utf8 && path) {
+    /* path might be UTF-8 from the command line */
+    const wchar_t *path_w = Curl_convert_UTF8_to_wchar(path);
+    if(path_w)
+      return _wstat64(path_w, buffer);
+  }
+  return (_stat64)(path, buffer);
+}
+
+int win32_stati64(const char *path, struct _stati64 *buffer)
+{
+  if(g_curl_tool_args_are_utf8 && path) {
+    /* path might be UTF-8 from the command line */
+    const wchar_t *path_w = Curl_convert_UTF8_to_wchar(path);
+    if(path_w)
+      return _wstati64(path_w, buffer);
+  }
+  return (_stati64)(path, buffer);
+}
+
+#endif /* WIN32 */
