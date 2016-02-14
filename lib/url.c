@@ -3312,53 +3312,39 @@ ConnectionExists(struct SessionHandle *data,
         }
       }
 
-      if(!needle->bits.httpproxy || needle->handler->flags&PROTOPT_SSL ||
-         (needle->bits.httpproxy && check->bits.httpproxy &&
-          needle->bits.tunnel_proxy && check->bits.tunnel_proxy &&
-          Curl_raw_equal(needle->proxy.name, check->proxy.name) &&
-          (needle->port == check->port))) {
-        /* The requested connection does not use a HTTP proxy or it uses SSL or
-           it is a non-SSL protocol tunneled over the same http proxy name and
-           port number or it is a non-SSL protocol which is allowed to be
-           upgraded via TLS */
-
-        if((Curl_raw_equal(needle->handler->scheme, check->handler->scheme) ||
-            needle->handler->protocol & check->handler->protocol) &&
-           Curl_raw_equal(needle->host.name, check->host.name) &&
-           needle->remote_port == check->remote_port) {
-          if(needle->handler->flags & PROTOPT_SSL) {
-            /* This is a SSL connection so verify that we're using the same
-               SSL options as well */
-            if(!Curl_ssl_config_matches(&needle->ssl_config,
-                                        &check->ssl_config)) {
-              DEBUGF(infof(data,
-                           "Connection #%ld has different SSL parameters, "
-                           "can't reuse\n",
-                           check->connection_id));
-              continue;
-            }
-            else if(check->ssl[FIRSTSOCKET].state != ssl_connection_complete) {
-              foundPendingCandidate = TRUE;
-              DEBUGF(infof(data,
-                           "Connection #%ld has not started SSL connect, "
-                           "can't reuse\n",
-                           check->connection_id));
-              continue;
-            }
-          }
-          match = TRUE;
-        }
-      }
-      else { /* The requested needle connection is using a proxy,
-                is the checked one using the same host, port and type? */
-        if(check->bits.proxy &&
-           (needle->proxytype == check->proxytype) &&
+      /* A match must have the same scheme or protocol; host and proxy info */
+      if((Curl_raw_equal(needle->handler->scheme, check->handler->scheme) ||
+          (needle->handler->protocol & check->handler->protocol)) &&
+         Curl_raw_equal(needle->host.name, check->host.name) &&
+         (needle->remote_port == check->remote_port) &&
+         (needle->bits.proxy == check->bits.proxy) &&
+         (!needle->bits.proxy ||
+          ((needle->proxytype == check->proxytype) &&
+           (needle->bits.httpproxy == check->bits.httpproxy) &&
            (needle->bits.tunnel_proxy == check->bits.tunnel_proxy) &&
            Curl_raw_equal(needle->proxy.name, check->proxy.name) &&
-           needle->port == check->port) {
-          /* This is the same proxy connection, use it! */
-          match = TRUE;
+           (needle->port == check->port)))) {
+        if(needle->handler->flags & PROTOPT_SSL) {
+          /* This is a SSL connection so verify that we're using the same
+             SSL options as well */
+          if(!Curl_ssl_config_matches(&needle->ssl_config,
+                                      &check->ssl_config)) {
+            DEBUGF(infof(data,
+                         "Connection #%ld has different SSL parameters, "
+                         "can't reuse\n",
+                         check->connection_id));
+            continue;
+          }
+          else if(check->ssl[FIRSTSOCKET].state != ssl_connection_complete) {
+            foundPendingCandidate = TRUE;
+            DEBUGF(infof(data,
+                         "Connection #%ld has not started SSL connect, "
+                         "can't reuse\n",
+                         check->connection_id));
+            continue;
+          }
         }
+        match = TRUE;
       }
 
       if(match) {
