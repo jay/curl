@@ -30,21 +30,21 @@ CURLINFO_TLS_SESSION \- get TLS session info
 CURLcode curl_easy_getinfo(CURL *handle, CURLINFO_TLS_SESSION,
                            struct curl_tlssessioninfo **session);
 .SH DESCRIPTION
-This option has been superseded by \fICURLINFO_TLS_SESSION_V2(3)\fP which was
-added in 7.46.0. The only reason you would use this option instead of V2 is if
-you could be using a version of libcurl earlier than 7.46.0.
+This option has been superseded by \fICURLINFO_TLS_SSL_PTR(3)\fP which was
+added in 7.46.0. The only reason you would use this option instead is if you
+could be using a version of libcurl earlier than 7.46.0.
 
-This option is exactly the same as \fICURLINFO_TLS_SESSION_V2(3)\fP except in
-the case of OpenSSL. If the session \fIbackend\fP is CURLSSLBACKEND_OPENSSL the
+This option is exactly the same as \fICURLINFO_TLS_SSL_PTR(3)\fP except in the
+case of OpenSSL. If the session \fIbackend\fP is CURLSSLBACKEND_OPENSSL the
 session \fIinternals\fP pointer varies depending on the option:
 
 CURLINFO_TLS_SESSION OpenSSL session \fIinternals\fP is SSL_CTX *.
 
-CURLINFO_TLS_SESSION_V2 OpenSSL session \fIinternals\fP is SSL *.
+CURLINFO_TLS_SSL_PTR OpenSSL session \fIinternals\fP is SSL *.
 
 You can obtain an SSL_CTX pointer from an SSL pointer using OpenSSL function
-SSL_get_SSL_CTX. Therefore aside from compatibility with older libcurl versions
-of libcurl there's no reason not to use V2.
+SSL_get_SSL_CTX. Therefore unless you need compatibility with older versions of
+libcurl use CURLINFO_TLS_SSL_PTR.
 .SH PROTOCOLS
 All TLS-based
 .SH EXAMPLE
@@ -55,4 +55,4 @@ Added in 7.34.0
 Returns CURLE_OK if the option is supported, and CURLE_UNKNOWN_OPTION if not.
 .SH "SEE ALSO"
 .BR curl_easy_getinfo "(3), " curl_easy_setopt "(3), "
-.BR CURLINFO_TLS_SESSION_V2 "(3), "
+.BR CURLINFO_TLS_SSL_PTR "(3), "

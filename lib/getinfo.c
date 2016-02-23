@@ -280,7 +280,7 @@ static CURLcode getinfo_slist(struct SessionHandle *data, CURLINFO info,
     *param_slistp = ptr.to_slist;
     break;
   case CURLINFO_TLS_SESSION:
-  case CURLINFO_TLS_SESSION_V2:
+  case CURLINFO_TLS_SSL_PTR:
     {
       struct curl_tlssessioninfo **tsip = (struct curl_tlssessioninfo **)
                                           param_slistp;

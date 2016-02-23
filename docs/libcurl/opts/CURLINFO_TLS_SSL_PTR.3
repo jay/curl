@@ -20,14 +20,14 @@
 .\" *
 .\" **************************************************************************
 .\"
-.TH CURLINFO_TLS_SESSION_V2 3 "01 Oct 2015" "libcurl 7.46.0" "curl_easy_getinfo options"
+.TH CURLINFO_TLS_SSL_PTR 3 "01 Oct 2015" "libcurl 7.46.0" "curl_easy_getinfo options"
 .SH NAME
-CURLINFO_TLS_SESSION, CURLINFO_TLS_SESSION_V2 \- get TLS session info
+CURLINFO_TLS_SESSION, CURLINFO_TLS_SSL_PTR \- get TLS session info
 .SH SYNOPSIS
 .nf
 #include <curl/curl.h>
 
-CURLcode curl_easy_getinfo(CURL *handle, CURLINFO_TLS_SESSION_V2,
+CURLcode curl_easy_getinfo(CURL *handle, CURLINFO_TLS_SSL_PTR,
                            struct curl_tlssessioninfo **session);
 
 /* if you need compatibility with libcurl < 7.46.0 use
@@ -38,8 +38,8 @@ CURLcode curl_easy_getinfo(CURL *handle, CURLINFO_TLS_SESSION,
 .SH DESCRIPTION
 Pass a pointer to a 'struct curl_tlssessioninfo *'.  The pointer will be
 initialized to refer to a 'struct curl_tlssessioninfo *' that will contain an
-enum indicating the SSL library used for the handshake and the respective
-internal TLS session structure of this underlying SSL library.
+enum indicating the SSL library used for the handshake and a pointer to the
+respective internal TLS session structure of this underlying SSL library.
 
 This may then be used to extract certificate information in a format
 convenient for further processing, such as manual validation. NOTE: this
@@ -74,7 +74,7 @@ PRFileDesc *
 .IP OpenSSL
 CURLINFO_TLS_SESSION: SSL_CTX *
 
-CURLINFO_TLS_SESSION_V2: SSL *
+CURLINFO_TLS_SSL_PTR: SSL *
 .RE
 Since 7.46.0 the \fIinternals\fP member can point to these other SSL backends
 as well:
