@@ -90,6 +90,7 @@ Example set of cookies:
 
 #include "urldata.h"
 #include "cookie.h"
+#include "parsedate.h"
 #include "strtok.h"
 #include "sendf.h"
 #include "slist.h"
@@ -103,6 +104,8 @@ Example set of cookies:
 #include "curl_printf.h"
 #include "curl_memory.h"
 #include "memdebug.h"
+
+char *cookie_fix_bad_siemens_expirestr(const char *const expirestr);
 
 static void freecookie(struct Cookie *co)
 {
@@ -628,6 +631,15 @@ Curl_cookie_add(struct Curl_easy *data,
       /* Note that if the date couldn't get parsed for whatever reason,
          the cookie will be treated as a session cookie */
       co->expires = curl_getdate(co->expirestr, NULL);
+
+      if(co->expires < 0) {
+        /* Parsing failed, try fixing. */
+        char *fixed = cookie_fix_bad_siemens_expirestr(co->expirestr);
+        if(fixed) {
+          co->expires = curl_getdate(fixed, NULL);
+          free(fixed);
+        }
+      }
 
       /* Session cookies have expires set to 0 so if we get that back
          from the date parser let's add a second to make it a
@@ -1474,6 +1486,52 @@ void Curl_flush_cookies(struct Curl_easy *data, int cleanup)
     Curl_cookie_cleanup(data->cookies);
   }
   Curl_share_unlock(data, CURL_LOCK_DATA_COOKIE);
+}
+
+/*
+Make bad cookie expiry strings more palatable for curl_getdate.
+
+The expiry format used by Siemens: [day, ]dd-mm-yy[yy] hh:mm:ss zzz
+That format is parsed successfully by FF and IE, but not Chrome.
+https://github.com/curl/curl/issues/697
+
+This function checks for one specific bad date format and if found converts
+it into the good date format. The rest of the string is unchecked therefore
+successful parsing by curl_getdate is not guaranteed.
+
+Success: (!= NULL) A heap-allocated string with the fixed date, in this format:
+         dd-mmm-yy[yy][ <rest of string, unchecked>]
+Failure: (NULL) An error occurred or the Siemens bad date format was not found.
+*/
+char *cookie_fix_bad_siemens_expirestr(const char *const expirestr)
+{
+  int x, dd, mm, yyyy;
+  char tmp[2];
+  const char *p;
+
+  for(p = expirestr; *p && *p != ','; ++p);
+  for((*p ? ++p : (p = expirestr)); *p == ' '; ++p);
+  if(!('0' <= *p && *p <= '9')) /* p must point to a digit, nothing else */
+    return NULL;
+  x = sscanf(p, /* check for dd-mm-yy[yy] */
+    "%1[0123456789]%1[0123456789]%1[-]"
+    "%1[0123456789]%1[0123456789]%1[-]"
+    "%1[0123456789]%1[0123456789]%1[0123456789]%1[0123456789]",
+    tmp, tmp, tmp, tmp, tmp, tmp, tmp, tmp, tmp, tmp);
+  if((x != 8 && x != 10) || (p[x] && p[x] != ' '))
+    return NULL;
+  dd = ((p[0] - '0') * 10) + (p[1] - '0');
+  mm = ((p[3] - '0') * 10) + (p[4] - '0');
+  yyyy = ((p[6] - '0') * 10) + (p[7] - '0');
+  if(x == 10)
+    yyyy = (yyyy * 100) + ((p[8] - '0') * 10) + (p[9] - '0');
+  if(!(1 <= dd && dd <= 31) ||
+     !(1 <= mm && mm <= 12) ||
+     (100 <= yyyy && yyyy <= 1600))
+    return NULL;
+
+  return aprintf("%02d-%s-%0*d%s", dd, Curl_month[mm - 1],
+                 ((x == 10) ? 4 : 2), yyyy, &p[x]);
 }
 
 #endif /* CURL_DISABLE_HTTP || CURL_DISABLE_COOKIES */
