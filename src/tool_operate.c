@@ -843,8 +843,9 @@ static CURLcode operate_do(struct GlobalConfig *global,
         /* If --metalink is used, we ignore --include (headers in
            output) option because mixing headers to the body will
            confuse XML parser and/or hash check will fail. */
-        else if(!config->use_metalink)
+        else if(!config->use_metalink) {
           my_setopt(curl, CURLOPT_HEADER, config->include_headers?1L:0L);
+        }
 
         if(config->oauth_bearer)
           my_setopt_str(curl, CURLOPT_XOAUTH2_BEARER, config->oauth_bearer);
@@ -886,8 +887,11 @@ static CURLcode operate_do(struct GlobalConfig *global,
 
           /* new in libcurl 7.19.4 */
           my_setopt_str(curl, CURLOPT_NOPROXY, config->noproxy);
+
+          my_setopt(curl, CURLOPT_SUPPRESS_CONNECT_HEADERS,
+                    config->suppress_connect_headers?1L:0L);
         }
-#endif
+#endif /* !CURL_DISABLE_PROXY */
 
         my_setopt(curl, CURLOPT_FAILONERROR, config->failonerror?1L:0L);
         my_setopt(curl, CURLOPT_UPLOAD, uploadfile?1L:0L);
