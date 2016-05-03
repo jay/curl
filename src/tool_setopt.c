@@ -151,6 +151,14 @@ const NameValue setopt_nv_CURLPROTO[] = {
   NVEND,
 };
 
+static const NameValue setopt_nv_CURLHDRBODY[] = {
+  NV(CURLHDRBODY_OFF),
+  NV(CURLHDRBODY_ALL),
+  NV(CURLHDRBODY_SERVER_ONLY),
+  NV(CURLHDRBODY_TUNNEL_ONLY),
+  NVEND,
+};
+
 /* These options have non-zero default values. */
 static const NameValue setopt_nv_CURLNONZERODEFAULTS[] = {
   NV1(CURLOPT_SSL_VERIFYPEER, 1),

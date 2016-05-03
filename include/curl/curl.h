@@ -800,6 +800,12 @@ typedef enum {
 #define CURLHEADER_UNIFIED  0
 #define CURLHEADER_SEPARATE (1<<0)
 
+/* parameter for the CURLOPT_HEADER option */
+#define CURLHDRBODY_OFF          0L  /* no headers in body */
+#define CURLHDRBODY_ALL          1L  /* all headers in body */
+#define CURLHDRBODY_SERVER_ONLY  2L  /* only host headers in body */
+#define CURLHDRBODY_TUNNEL_ONLY  3L  /* only proxy tunnel headers in body */
+
 /* CURLPROTO_ defines are for the CURLOPT_*PROTOCOLS options */
 #define CURLPROTO_HTTP   (1<<0)
 #define CURLPROTO_HTTPS  (1<<1)

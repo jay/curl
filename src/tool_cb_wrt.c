@@ -90,7 +90,7 @@ size_t tool_write_cb(void *buffer, size_t sz, size_t nmemb, void *userdata)
     return failure;
 
 #ifdef DEBUGBUILD
-  if(config->include_headers) {
+  if(config->include_header) {
     if(sz * nmemb > (size_t)CURL_MAX_HTTP_HEADER) {
       warnf(config->global, "Header data size exceeds single call write "
             "limit!\n");

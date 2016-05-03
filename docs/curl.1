@@ -829,12 +829,17 @@ downloading a file.
 .IP "-i, --include"
 (HTTP) Include the HTTP-header in the output. The HTTP-header includes things
 like server-name, date of the document, HTTP-version and more...
+.IP "--include-tunnel"
+Include proxy tunnel headers in the output. Both \fI-i, --include\fP and
+\fI-I, --head\fP do this by default. If you negate this option it must come
+after -i or -I so that proxy tunnel headers will not be shown.
+(Added in 7.50.0)
 .IP "-I, --head"
 (HTTP/FTP/FILE)
 Fetch the HTTP-header only! HTTP-servers feature the command HEAD
-which this uses to get nothing but the header of a document. When used
-on an FTP or FILE file, curl displays the file size and last modification
-time only.
+which this uses to get nothing but the header of a document. When used on an
+FTP or FILE file, curl displays the file size and last modification time only.
+This option implies \fI-i, --include\fP.
 .IP "--interface <name>"
 Perform an operation using a specified interface. You can enter interface
 name, IP address or host name. An example could look like:

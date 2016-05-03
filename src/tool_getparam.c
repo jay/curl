@@ -237,6 +237,7 @@ static const struct LongShort aliases[]= {
   {"H",  "header",                   TRUE},
   {"Hp", "proxy-header",             TRUE},
   {"i",  "include",                  FALSE},
+  {"it", "include-tunnel",           FALSE},
   {"I",  "head",                     FALSE},
   {"j",  "junk-session-cookies",     FALSE},
   {"J",  "remote-header-name",       FALSE},
@@ -1466,24 +1467,41 @@ ParameterError getparameter(char *flag,    /* f or -long-flag */
         return err;
       break;
     case 'i':
-      config->include_headers = toggle; /* include the headers as well in the
-                                           general output stream */
+      if(subletter == 't') { /* --include-tunnel */
+        switch(config->include_header) {
+        case CURLHDRBODY_OFF:
+          if(toggle)
+            config->include_header = CURLHDRBODY_TUNNEL_ONLY;
+          break;
+        case CURLHDRBODY_ALL:
+          if(!toggle)
+            config->include_header = CURLHDRBODY_SERVER_ONLY;
+          break;
+        case CURLHDRBODY_SERVER_ONLY:
+          if(toggle)
+            config->include_header = CURLHDRBODY_ALL;
+          break;
+        case CURLHDRBODY_TUNNEL_ONLY:
+          if(!toggle)
+            config->include_header = CURLHDRBODY_OFF;
+          break;
+        }
+      }
+      else /* --include */
+        config->include_header = toggle ? CURLHDRBODY_ALL : CURLHDRBODY_OFF;
+      break;
+    case 'I': /* --head */
+      config->no_body = toggle;
+      config->include_header = toggle ? CURLHDRBODY_ALL : CURLHDRBODY_OFF;
+      if(SetHTTPrequest(config, (config->no_body ? HTTPREQ_HEAD : HTTPREQ_GET),
+                        &config->httpreq))
+        return PARAM_BAD_USE;
       break;
     case 'j':
       config->cookiesession = toggle;
       break;
-    case 'I':
-      /*
-       * no_body will imply include_headers later on
-       */
-      config->no_body = toggle;
-      if(SetHTTPrequest(config,
-                        (config->no_body)?HTTPREQ_HEAD:HTTPREQ_GET,
-                        &config->httpreq))
-        return PARAM_BAD_USE;
-      break;
     case 'J': /* --remote-header-name */
-      if(config->include_headers) {
+      if(config->include_header) {
         warnf(global,
               "--include and --remote-header-name cannot be combined.\n");
         return PARAM_BAD_USE;

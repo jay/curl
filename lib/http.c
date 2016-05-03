@@ -3121,7 +3121,8 @@ CURLcode Curl_http_readwrite_headers(struct SessionHandle *data,
       /* now, only output this if the header AND body are requested:
        */
       writetype = CLIENTWRITE_HEADER;
-      if(data->set.include_header)
+      if(data->set.include_header == CURLHDRBODY_ALL ||
+         data->set.include_header == CURLHDRBODY_SERVER_ONLY)
         writetype |= CLIENTWRITE_BODY;
 
       headerlen = k->p - data->state.headerbuff;
@@ -3736,7 +3737,8 @@ CURLcode Curl_http_readwrite_headers(struct SessionHandle *data,
      */
 
     writetype = CLIENTWRITE_HEADER;
-    if(data->set.include_header)
+    if(data->set.include_header == CURLHDRBODY_ALL ||
+       data->set.include_header == CURLHDRBODY_SERVER_ONLY)
       writetype |= CLIENTWRITE_BODY;
 
     if(data->set.verbose)

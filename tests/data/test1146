@@ -1,0 +1,78 @@
+<testcase>
+<info>
+<keywords>
+HTTP
+HTTP GET
+HTTP CONNECT
+HTTP proxy
+proxytunnel
+</keywords>
+</info>
+
+#
+# Server-side
+<reply>
+<connect>
+HTTP/1.1 200 Mighty fine indeed
+Server: test tunnel 2000
+
+</connect>
+
+<data nocheck="yes">
+HTTP/1.0 200 OK
+Date: Thu, 09 Nov 2010 14:49:00 GMT
+Server: test-server/fake
+Content-Type: text/html
+Funny-head: yesyes
+Content-Length: 9
+Connection: keep-alive
+
+contents
+</data>
+</reply>
+
+#
+# Client-side
+<client>
+<server>
+http
+http-proxy
+</server>
+<name>
+HTTP proxytunnel: Output server headers and server content
+</name>
+<command option="no-include">
+--proxy %HOSTIP:%PROXYPORT --proxytunnel --include --no-include-tunnel http://%HOSTIP.1146:%HTTPPORT/we/want/that/page/1146
+</command>
+</client>
+
+#
+# Verify data after the test has been "shot"
+<verify>
+<strip>
+^User-Agent:.*
+</strip>
+<proxy>
+CONNECT %HOSTIP.1146:%HTTPPORT HTTP/1.1
+Host: %HOSTIP.1146:%HTTPPORT
+
+</proxy>
+<protocol>
+GET /we/want/that/page/1146 HTTP/1.1
+Host: %HOSTIP.1146:%HTTPPORT
+Accept: */*
+
+</protocol>
+<stdout>
+HTTP/1.0 200 OK
+Date: Thu, 09 Nov 2010 14:49:00 GMT
+Server: test-server/fake
+Content-Type: text/html
+Funny-head: yesyes
+Content-Length: 9
+Connection: keep-alive
+
+contents
+</stdout>
+</verify>
+</testcase>

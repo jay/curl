@@ -115,6 +115,7 @@ static const char *const helptext[] = {
   "     --http2-prior-knowledge  Use HTTP 2 without HTTP/1.1 Upgrade (H)",
   "     --ignore-content-length  Ignore the HTTP Content-Length header",
   " -i, --include       Include protocol headers in the output (H/F)",
+  "     --include-tunnel  Include proxy tunnel headers in the output (H/F)",
   " -k, --insecure      Allow connections to SSL sites without certs (H)",
   "     --interface INTERFACE  Use network INTERFACE (or address)",
   " -4, --ipv4          Resolve name to IPv4 address",

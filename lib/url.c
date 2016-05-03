@@ -750,7 +750,7 @@ CURLcode Curl_setopt(struct SessionHandle *data, CURLoption option,
     /*
      * Set to include the header in the general data output stream.
      */
-    data->set.include_header = (0 != va_arg(param, long)) ? TRUE : FALSE;
+    data->set.include_header = va_arg(param, long);
     break;
   case CURLOPT_NOPROGRESS:
     /*

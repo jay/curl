@@ -26,11 +26,22 @@ CURLOPT_HEADER \- pass headers to the data stream
 .SH SYNOPSIS
 #include <curl/curl.h>
 
-CURLcode curl_easy_setopt(CURL *handle, CURLOPT_HEADER, long onoff);
+CURLcode curl_easy_setopt(CURL *handle, CURLOPT_HEADER, long hdrbody);
 .SH DESCRIPTION
-Pass in \fIonoff\fP set to 1 to tell the library to include the header in the
-body output for requests with this \fIhandle\fP. This option is relevant for
-protocols that actually have headers or other meta-data (like HTTP and FTP).
+Include the header in the body output for requests with this \fIhandle\fP. This
+option is relevant for protocols that actually have headers or other meta-data
+(like HTTP and FTP). Use one of the values below for \fIhdrbody\fP:
+
+.RS
+.IP 0L: CURLHDRBODY_OFF
+No headers in body.
+.IP 1L: CURLHDRBODY_ALL
+All headers in body.
+.IP 2L: CURLHDRBODY_SERVER_ONLY
+Only server headers in body, no proxy tunnel headers. (Added in 7.50.0)
+.IP 3L: CURLHDRBODY_TUNNEL_ONLY
+Only proxy tunnel headers in body, no server headers. (Added in 7.50.0)
+.RE
 
 When asking to get the header info passed to the same callback as the body, it
 is not possible to accurately separate them again without detailed knowledge
@@ -42,7 +53,7 @@ data separately.
 While named confusingly similar, \fICURLOPT_HTTPHEADER(3)\fP is used to set
 custom HTTP headers!
 .SH DEFAULT
-0
+CURLHDRBODY_OFF (0L)
 .SH PROTOCOLS
 Most
 .SH EXAMPLE

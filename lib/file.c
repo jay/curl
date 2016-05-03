@@ -467,7 +467,9 @@ static CURLcode file_do(struct connectdata *conn, bool *done)
   /* If we have selected NOBODY and HEADER, it means that we only want file
      information. Which for FILE can't be much more than the file size and
      date. */
-  if(data->set.opt_no_body && data->set.include_header && fstated) {
+  if(data->set.opt_no_body && fstated &&
+     (data->set.include_header == CURLHDRBODY_ALL ||
+      data->set.include_header == CURLHDRBODY_SERVER_ONLY)) {
     time_t filetime;
     struct tm buffer;
     const struct tm *tm = &buffer;

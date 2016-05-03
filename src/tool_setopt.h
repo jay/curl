@@ -70,6 +70,7 @@ extern const NameValueUnsigned setopt_nv_CURLAUTH[];
 #define setopt_nv_CURLOPT_REDIR_PROTOCOLS setopt_nv_CURLPROTO
 #define setopt_nv_CURLOPT_PROXYTYPE setopt_nv_CURLPROXY
 #define setopt_nv_CURLOPT_PROXYAUTH setopt_nv_CURLAUTH
+#define setopt_nv_CURLOPT_HEADER setopt_nv_CURLHDRBODY
 
 /* Intercept setopt calls for --libcurl */
 

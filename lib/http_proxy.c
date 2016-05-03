@@ -369,7 +369,8 @@ CURLcode Curl_proxyCONNECT(struct connectdata *conn,
 
                   /* send the header to the callback */
                   writetype = CLIENTWRITE_HEADER;
-                  if(data->set.include_header)
+                  if(data->set.include_header == CURLHDRBODY_ALL ||
+                     data->set.include_header == CURLHDRBODY_TUNNEL_ONLY)
                     writetype |= CLIENTWRITE_BODY;
 
                   result = Curl_client_write(conn, writetype, line_start,
