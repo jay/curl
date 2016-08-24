@@ -50,7 +50,7 @@ POP3 NTLM authentication with SASL downgrade
 # we force our own host name, in order to make the test machine independent
 CURL_GETHOSTNAME=curlhost
 # we try to use the LD_PRELOAD hack, if not a debug build
-LD_PRELOAD=%PWD/libtest/.libs/libhostname.so
+LD_PRELOAD=%PWD/libtest/.libs/libhostname.so:%LD_PRELOAD
  </setenv>
  <command>
 pop3://%HOSTIP:%POP3PORT/880 -u user:secret

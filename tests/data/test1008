@@ -95,7 +95,7 @@ HTTP proxy CONNECT auth NTLM with chunked-encoded 407 response
 # we force our own host name, in order to make the test machine independent
 CURL_GETHOSTNAME=curlhost
 # we try to use the LD_PRELOAD hack, if not a debug build
-LD_PRELOAD=%PWD/libtest/.libs/libhostname.so
+LD_PRELOAD=%PWD/libtest/.libs/libhostname.so:%LD_PRELOAD
  </setenv>
  <command>
 http://test.remote.example.com.1008:%HTTPPORT/path/10080002 --proxy http://%HOSTIP:%HTTPPORT --proxy-user testuser:testpass --proxy-ntlm --proxytunnel

@@ -164,6 +164,7 @@ my $CURLLOG="$LOGDIR/curl.log"; # all command lines run
 my $FTPDCMD="$LOGDIR/ftpserver.cmd"; # copy ftp server instructions here
 my $SERVERLOGS_LOCK="$LOGDIR/serverlogs.lock"; # server logs advisor read lock
 my $CURLCONFIG="../curl-config"; # curl-config from current build
+my $LD_PRELOAD=$ENV{LD_PRELOAD} || ""; # for substitute variable %LD_PRELOAD
 
 # Normally, all test cases should be run, but at times it is handy to
 # simply run a particular one:
@@ -2780,6 +2781,7 @@ sub subVariables {
   $$thing =~ s/%PWD/$pwd/g;
   $$thing =~ s/%SRCDIR/$srcdir/g;
   $$thing =~ s/%USER/$USER/g;
+  $$thing =~ s/%LD_PRELOAD/$LD_PRELOAD/g;
 
   # The purpose of FTPTIME2 and FTPTIME3 is to provide times that can be
   # used for time-out tests and that whould work on most hosts as these

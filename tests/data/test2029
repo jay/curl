@@ -184,7 +184,7 @@ HTTP authorization retry (NTLM switching to Basic)
 # we force our own host name, in order to make the test machine independent
 CURL_GETHOSTNAME=curlhost
 # we try to use the LD_PRELOAD hack, if not a debug build
-LD_PRELOAD=%PWD/libtest/.libs/libhostname.so
+LD_PRELOAD=%PWD/libtest/.libs/libhostname.so:%LD_PRELOAD
  </setenv>
  <command>
 http://%HOSTIP:%HTTPPORT/2029 ntlm basic

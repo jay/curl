@@ -68,7 +68,7 @@ HTTP with NTLM delegation to winbind helper
 # we force our own host name, in order to make the test machine independent
 CURL_GETHOSTNAME=curlhost
 # we try to use the LD_PRELOAD hack, if not a debug build
-LD_PRELOAD=%PWD/libtest/.libs/libhostname.so
+LD_PRELOAD=%PWD/libtest/.libs/libhostname.so:%LD_PRELOAD
 # set path to fake_auth instead of real ntlm_auth to generate NTLM type1 and type 3 messages
 CURL_NTLM_WB_FILE=%PWD/server/fake_ntlm
 # set source directory so fake_ntlm can find the test files

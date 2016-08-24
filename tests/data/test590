@@ -84,7 +84,7 @@ HTTP proxy offers Negotiate+NTLM, use only NTLM
 # we force our own host name, in order to make the test machine independent
 CURL_GETHOSTNAME=curlhost
 # we try to use the LD_PRELOAD hack, if not a debug build
-LD_PRELOAD=%PWD/libtest/.libs/libhostname.so
+LD_PRELOAD=%PWD/libtest/.libs/libhostname.so:%LD_PRELOAD
  </setenv>
  <command>
 http://test.remote.example.com/path/590 http://%HOSTIP:%HTTPPORT

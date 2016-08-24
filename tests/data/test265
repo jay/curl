@@ -88,7 +88,7 @@ HTTP proxy CONNECT auth NTLM and then POST, response-body in the 407
 # we force our own host name, in order to make the test machine independent
 CURL_GETHOSTNAME=curlhost
 # we try to use the LD_PRELOAD hack, if not a debug build
-LD_PRELOAD=%PWD/libtest/.libs/libhostname.so
+LD_PRELOAD=%PWD/libtest/.libs/libhostname.so:%LD_PRELOAD
  </setenv>
  <command>
 http://test.remote.example.com.265:%HTTPPORT/path/2650002 --proxy http://%HOSTIP:%HTTPPORT --proxy-user testuser:testpass --proxy-ntlm --proxytunnel -d "postit"
