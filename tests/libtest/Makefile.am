@@ -87,7 +87,7 @@ if USE_CPPFLAG_CURL_STATICLIB
 AM_CPPFLAGS += -DCURL_STATICLIB
 endif
 
-AM_LDFLAGS =
+AM_LDFLAGS = -Wl,-rpath "-Wl,$(abs_top_builddir)/lib/.libs"
 AM_CFLAGS =
 
 libhostname_la_CPPFLAGS_EXTRA =

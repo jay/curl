@@ -206,6 +206,10 @@ XC_LIBTOOL
 # Automake conditionals based on libtool related checks
 #
 
+AM_CONDITIONAL([CURL_LT_BUILD_SHARED],
+  [test "x$xc_lt_build_shared" = 'xyes'])
+AM_CONDITIONAL([CURL_LT_BUILD_STATIC],
+  [test "x$xc_lt_build_static" = 'xyes'])
 AM_CONDITIONAL([CURL_LT_SHLIB_USE_VERSION_INFO],
   [test "x$xc_lt_shlib_use_version_info" = 'xyes'])
 AM_CONDITIONAL([CURL_LT_SHLIB_USE_NO_UNDEFINED],

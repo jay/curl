@@ -134,5 +134,14 @@ checksrc:
 
 if CURLDEBUG
 # for debug builds, we scan the sources on all regular make invokes
-all-local: checksrc
+all-local:: checksrc
+endif
+
+# This script fixes lt-curl so that the first rpath it checks for dependencies
+# will be lib/.libs. See curl bug https://github.com/curl/curl/issues/432
+workaround_libtool_bug_24296:
+	@PERL@ "$(top_srcdir)/scripts/fix_rpath.pl" "$(abs_top_builddir)"
+
+if CURL_LT_BUILD_SHARED
+all-local:: workaround_libtool_bug_24296
 endif
