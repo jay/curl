@@ -1538,6 +1538,8 @@ static CURLcode smtp_parse_url_path(struct connectdata *conn)
   struct smtp_conn *smtpc = &conn->proto.smtpc;
   const char *path = data->state.path;
   char localhost[HOSTNAME_MAX + 1];
+  CURLcode rc = CURLE_OK;
+  char *p;
 
   /* Calculate the path if necessary */
   if(!*path) {
@@ -1548,7 +1550,18 @@ static CURLcode smtp_parse_url_path(struct connectdata *conn)
   }
 
   /* URL decode the path and use it as the domain in our EHLO */
-  return Curl_urldecode(conn->data, path, 0, &smtpc->domain, NULL, TRUE);
+  rc = Curl_urldecode(conn->data, path, 0, &smtpc->domain, NULL, TRUE);
+  if(rc)
+    return rc;
+
+  /* Replace non printable US-ASCII excl. "[", "\", "]" chars with '?'.
+     See rfc5321#section-4.1.1.1 and rfc5321#section-4.1.3 */
+  for(p = smtpc->domain; *p; p++) {
+    if(*p < 33 || *p > 126 || (*p > 90 && *p < 94))
+      *p = '?';
+  }
+
+  return CURLE_OK;
 }
 
 /***********************************************************************
