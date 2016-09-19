@@ -34,6 +34,10 @@
 
 #ifdef USE_OPENSSL
 
+#ifdef HAVE_FCNTL_H
+#include <fcntl.h>
+#endif
+
 #ifdef HAVE_LIMITS_H
 #include <limits.h>
 #endif
@@ -209,7 +213,13 @@ static void dump_to_fd(int fd, unsigned char *client_random,
   line[pos++] = '\n';
   /* Write at once rather than using buffered I/O. Perhaps there is concurrent
    * write access so do not write hex values one by one. */
-  write(fd, line, pos);
+  {
+#if defined(__GNUC__)
+    /* silence write() unused result warning */
+    int unused UNUSED_PARAM = (int)
+#endif
+      write(fd, line, pos);
+  }
 }
 
 static void tap_ssl_key(const SSL *ssl, ssl_tap_state_t *state)
