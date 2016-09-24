@@ -68,6 +68,9 @@ endif
 
 # Dependencies (may need to be overriden)
 LDADD = $(SUPPORTFILES_LIBS)
+
+LDFLAGS = -Wl,-rpath "-Wl,$(abs_top_builddir)/lib/.libs" @LDFLAGS@
+
 DEPENDENCIES = $(top_builddir)/lib/libcurl.la
 
 # Makefile.inc provides the source defines (TESTUTIL, SUPPORTFILES,
@@ -87,7 +90,7 @@ if USE_CPPFLAG_CURL_STATICLIB
 AM_CPPFLAGS += -DCURL_STATICLIB
 endif
 
-AM_LDFLAGS = -Wl,-rpath "-Wl,$(abs_top_builddir)/lib/.libs"
+AM_LDFLAGS =
 AM_CFLAGS =
 
 libhostname_la_CPPFLAGS_EXTRA =

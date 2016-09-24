@@ -44,6 +44,8 @@ BUILD_UNIT =
 DIST_UNIT = unit
 endif
 
+LDFLAGS = -Wl,-rpath "-Wl,$(abs_top_builddir)/lib/.libs" @LDFLAGS@
+
 SUBDIRS = certs data server libtest $(BUILD_UNIT)
 DIST_SUBDIRS = $(SUBDIRS) $(DIST_UNIT)
 

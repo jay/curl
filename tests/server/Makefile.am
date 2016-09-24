@@ -53,6 +53,8 @@ endif
 # Prevent LIBS from being used for all link targets
 LIBS = $(BLANK_AT_MAKETIME)
 
+LDFLAGS = -Wl,-rpath "-Wl,$(abs_top_builddir)/lib/.libs" @LDFLAGS@
+
 if DOING_NATIVE_WINDOWS
 AM_CPPFLAGS += -DCURL_STATICLIB
 endif
