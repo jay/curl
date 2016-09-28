@@ -1838,6 +1838,30 @@ CURLcode operate(struct GlobalConfig *config, int argc, argv_item_t argv[])
   /* Setup proper locale from environment */
 #ifdef HAVE_SETLOCALE
   setlocale(LC_ALL, "");
+#if defined(WIN32) && !defined(__CYGWIN__)
+  {
+    const char *x;
+    const char *lang = getenv("LANG");
+
+#define IMPORT_LOCALE_ENV(category) \
+  x = getenv(#category); \
+  if(x) \
+    x = setlocale(category, x); \
+  if(!x && lang) \
+    setlocale(category, lang);
+
+    IMPORT_LOCALE_ENV(LC_TIME);
+    IMPORT_LOCALE_ENV(LC_NUMERIC);
+    IMPORT_LOCALE_ENV(LC_MONETARY);
+    IMPORT_LOCALE_ENV(LC_CTYPE);
+    IMPORT_LOCALE_ENV(LC_COLLATE);
+
+    /* LC_ALL may not set all types and overrides LANG; set it last */
+    x = getenv("LC_ALL");
+    if(x)
+      setlocale(LC_ALL, x);
+  }
+#endif
 #endif
 
   /* Parse .curlrc if necessary */
