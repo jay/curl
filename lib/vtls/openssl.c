@@ -1127,15 +1127,14 @@ static CURLcode verifyhost(struct connectdata *conn, X509 *server_cert)
   if(altnames) {
     int numalts;
     int i;
-    bool dnsmatched = FALSE;
-    bool ipmatched = FALSE;
 
     /* get amount of alternatives, RFC2459 claims there MUST be at least
        one, but we don't depend on it... */
     numalts = sk_GENERAL_NAME_num(altnames);
 
-    /* loop through all alternatives - until a dnsmatch */
-    for(i=0; (i < numalts) && !dnsmatched; i++) {
+    /* loop through alternatives until we match and we've definitively
+       identified the presence of both accepted types. */
+    for(i = 0; i < numalts; ++i) {
       /* get a handle to alternative name number i */
       const GENERAL_NAME *check = sk_GENERAL_NAME_value(altnames, i);
 
@@ -1143,6 +1142,12 @@ static CURLcode verifyhost(struct connectdata *conn, X509 *server_cert)
         dNSName = TRUE;
       else if(check->type == GEN_IPADD)
         iPAddress = TRUE;
+
+      if(matched) {
+        if(dNSName && iPAddress)
+          break;
+        continue;
+      }
 
       /* only check alternatives of the same type the target is */
       if(check->type == target) {
@@ -1166,7 +1171,7 @@ static CURLcode verifyhost(struct connectdata *conn, X509 *server_cert)
              /* if this isn't true, there was an embedded zero in the name
                 string and we cannot match it. */
              Curl_cert_hostcheck(altptr, conn->host.name)) {
-            dnsmatched = TRUE;
+            matched = TRUE;
             infof(data,
                   " subjectAltName: host \"%s\" matched cert's \"%s\"\n",
                   conn->host.dispname, altptr);
@@ -1177,7 +1182,7 @@ static CURLcode verifyhost(struct connectdata *conn, X509 *server_cert)
           /* compare alternative IP address if the data chunk is the same size
              our server IP address is */
           if((altlen == addrlen) && !memcmp(altptr, &addr, altlen)) {
-            ipmatched = TRUE;
+            matched = TRUE;
             infof(data,
                   " subjectAltName: host \"%s\" matched cert's IP address!\n",
                   conn->host.dispname);
@@ -1187,15 +1192,12 @@ static CURLcode verifyhost(struct connectdata *conn, X509 *server_cert)
       }
     }
     GENERAL_NAMES_free(altnames);
-
-    if(dnsmatched || ipmatched)
-      matched = TRUE;
   }
 
   if(matched)
     /* an alternative name matched */
     ;
-  else if(dNSName || iPAddress) {
+  else if(dNSName || (iPAddress && target == GEN_IPADD)) {
     infof(data, " subjectAltName does not match %s\n", conn->host.dispname);
     failf(data, "SSL: no alternative certificate subject name matches "
           "target host name '%s'", conn->host.dispname);
