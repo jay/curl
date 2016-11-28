@@ -60,6 +60,7 @@ typedef enum {
   VAR_LOCAL_PORT,
   VAR_HTTP_VERSION,
   VAR_SCHEME,
+  VAR_FLAGS,
   VAR_NUM_OF_VARS /* must be the last */
 } replaceid;
 
@@ -101,16 +102,26 @@ static const struct variable replacements[]={
   {"local_port", VAR_LOCAL_PORT},
   {"http_version", VAR_HTTP_VERSION},
   {"scheme", VAR_SCHEME},
+  {"flags", VAR_FLAGS},
   {NULL, VAR_NONE}
 };
 
 void ourWriteOut(CURL *curl, struct OutStruct *outs, const char *writeinfo)
 {
-  FILE *stream = stdout;
+  FILE * const default_stream = stdout;
+  const int default_float_precision = 3;
+  FILE *stream;
+  FILE *fdopened[10] = { NULL, };
+  int flt_precision;
   const char *ptr = writeinfo;
   char *stringp = NULL;
   long longinfo;
   double doubleinfo;
+
+  fdopened[1] = stdout;
+  fdopened[2] = stderr;
+  stream = default_stream;
+  flt_precision = default_float_precision;
 
   while(ptr && *ptr) {
     if('%' == *ptr) {
@@ -130,7 +141,83 @@ void ourWriteOut(CURL *curl, struct OutStruct *outs, const char *writeinfo)
           keepit = *end;
           *end = 0; /* zero terminate */
           for(i = 0; replacements[i].name; i++) {
-            if(curl_strequal(ptr, replacements[i].name)) {
+            if(replacements[i].id == VAR_FLAGS) {
+              const char *next;
+
+              if(end - ptr < 6 || !curl_strnequal(ptr, "flags:", 6))
+                continue;
+
+              match = TRUE;
+
+              /* tokenize flags in format -foo, +bar, baz */
+              for(next = ptr + 6; next != end;) {
+                bool on;
+                const char *start, *stop;
+
+                start = next;
+                while(*start == ' ' || *start == '\t')
+                  ++start;
+                on = (*start == '-' ? false : true);
+                if(*start == '-' || *start == '+')
+                  ++start;
+
+                stop = strchr(start, ',');
+                if(stop)
+                  next = stop + 1;
+                else {
+                  stop = end;
+                  next = end;
+                }
+                while(stop != start &&
+                      (*(stop - 1) == ' ' || *(stop - 1) == '\t'))
+                  --stop;
+                if(stop == start)
+                  continue;
+
+                if(stop - start == 3 && curl_strnequal(start, "fd", 2) &&
+                   '0' <= start[2] && start[2] <= '9') {
+                  int fd = start[2] - '0';
+
+                  fflush(stream);
+                  if(fd && !fdopened[fd])
+                    fdopened[fd] = fdopen(fd, "w");
+                  if(fdopened[fd])
+                    stream = on ? fdopened[fd] : default_stream;
+                  else
+                    fprintf(stderr, "curl: failed to fdopen fd%d, errno %d\n",
+                            fd, errno);
+                  continue;
+                }
+
+                if(stop - start >= 5 && curl_strnequal(start, "prec", 4) &&
+                   '0' <= start[4] && start[4] <= '9' &&
+                   (&start[5] == stop ||
+                    ('0' <= start[5] && start[5] <= '9' &&
+                     &start[6] == stop))) {
+                  int prec = (&start[5] == stop ? start[4] - '0' :
+                              (start[4] - '0') * 10 + (start[5] - '0'));
+                  flt_precision = on ? prec : default_float_precision;
+                  continue;
+                }
+
+                if(stop - start == 6) {
+                  if(curl_strnequal(start, "stdout", 6)) {
+                    fflush(stream);
+                    stream = on ? stdout : default_stream;
+                    continue;
+                  }
+                  if(curl_strnequal(start, "stderr", 6)) {
+                    fflush(stream);
+                    stream = on ? stderr : default_stream;
+                    continue;
+                  }
+                }
+
+                fprintf(stderr, "curl: unknown --write-out flag: '%.*s'\n",
+                        (int)(stop - start), start);
+              }
+            }
+            else if(curl_strequal(ptr, replacements[i].name)) {
               match = TRUE;
               switch(replacements[i].id) {
               case VAR_EFFECTIVE_URL:
@@ -174,41 +261,41 @@ void ourWriteOut(CURL *curl, struct OutStruct *outs, const char *writeinfo)
                 if(CURLE_OK ==
                    curl_easy_getinfo(curl, CURLINFO_REDIRECT_TIME,
                                      &doubleinfo))
-                  fprintf(stream, "%.6f", doubleinfo);
+                  fprintf(stream, "%.*f", flt_precision, doubleinfo);
                 break;
               case VAR_TOTAL_TIME:
                 if(CURLE_OK ==
                    curl_easy_getinfo(curl, CURLINFO_TOTAL_TIME, &doubleinfo))
-                  fprintf(stream, "%.6f", doubleinfo);
+                  fprintf(stream, "%.*f", flt_precision, doubleinfo);
                 break;
               case VAR_NAMELOOKUP_TIME:
                 if(CURLE_OK ==
                    curl_easy_getinfo(curl, CURLINFO_NAMELOOKUP_TIME,
                                      &doubleinfo))
-                  fprintf(stream, "%.6f", doubleinfo);
+                  fprintf(stream, "%.*f", flt_precision, doubleinfo);
                 break;
               case VAR_CONNECT_TIME:
                 if(CURLE_OK ==
                    curl_easy_getinfo(curl, CURLINFO_CONNECT_TIME, &doubleinfo))
-                  fprintf(stream, "%.6f", doubleinfo);
+                  fprintf(stream, "%.*f", flt_precision, doubleinfo);
                 break;
               case VAR_APPCONNECT_TIME:
                 if(CURLE_OK ==
                    curl_easy_getinfo(curl, CURLINFO_APPCONNECT_TIME,
                                      &doubleinfo))
-                  fprintf(stream, "%.6f", doubleinfo);
+                  fprintf(stream, "%.*f", flt_precision, doubleinfo);
                 break;
               case VAR_PRETRANSFER_TIME:
                 if(CURLE_OK ==
                    curl_easy_getinfo(curl, CURLINFO_PRETRANSFER_TIME,
                                      &doubleinfo))
-                  fprintf(stream, "%.6f", doubleinfo);
+                  fprintf(stream, "%.*f", flt_precision, doubleinfo);
                 break;
               case VAR_STARTTRANSFER_TIME:
                 if(CURLE_OK ==
                    curl_easy_getinfo(curl, CURLINFO_STARTTRANSFER_TIME,
                                      &doubleinfo))
-                  fprintf(stream, "%.6f", doubleinfo);
+                  fprintf(stream, "%.*f", flt_precision, doubleinfo);
                 break;
               case VAR_SIZE_UPLOAD:
                 if(CURLE_OK ==
@@ -225,12 +312,12 @@ void ourWriteOut(CURL *curl, struct OutStruct *outs, const char *writeinfo)
                 if(CURLE_OK ==
                    curl_easy_getinfo(curl, CURLINFO_SPEED_DOWNLOAD,
                                      &doubleinfo))
-                  fprintf(stream, "%.3f", doubleinfo);
+                  fprintf(stream, "%.*f", flt_precision, doubleinfo);
                 break;
               case VAR_SPEED_UPLOAD:
                 if(CURLE_OK ==
                    curl_easy_getinfo(curl, CURLINFO_SPEED_UPLOAD, &doubleinfo))
-                  fprintf(stream, "%.3f", doubleinfo);
+                  fprintf(stream, "%.*f", flt_precision, doubleinfo);
                 break;
               case VAR_CONTENT_TYPE:
                 if((CURLE_OK ==
@@ -360,5 +447,5 @@ void ourWriteOut(CURL *curl, struct OutStruct *outs, const char *writeinfo)
       ptr++;
     }
   }
-
+  fflush(stream);
 }
