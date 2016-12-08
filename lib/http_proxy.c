@@ -131,6 +131,13 @@ CURLcode Curl_proxy_connect(struct connectdata *conn, int sockindex)
   return CURLE_OK;
 }
 
+static bool conn_has_data_pending(struct connectdata *conn, int sockindex)
+{
+  return SOCKET_READABLE(conn->sock[sockindex], 0) > 0 ||
+         Curl_ssl_data_pending(conn, sockindex) ||
+         Curl_recv_has_postponed_data(conn, sockindex);
+}
+
 /*
  * Curl_proxyCONNECT() requires that we're connected to a HTTP proxy. This
  * function will issue the necessary commands to get a seamless tunnel through
@@ -285,7 +292,7 @@ CURLcode Curl_proxyCONNECT(struct connectdata *conn,
     }
 
     if(!blocking) {
-      if(0 == SOCKET_READABLE(tunnelsocket, 0))
+      if(!conn_has_data_pending(conn, sockindex))
         /* return so we'll be called again polling-style */
         return CURLE_OK;
       else {
@@ -311,6 +318,10 @@ CURLcode Curl_proxyCONNECT(struct connectdata *conn,
       perline=0;
 
       while((nread<BUFSIZE) && (keepon && !error)) {
+        int pending;
+
+        if(Curl_pgrsUpdate(conn))
+          return CURLE_ABORTED_BY_CALLBACK;
 
         check = Curl_timeleft(data, NULL, TRUE);
         if(check <= 0) {
@@ -319,8 +330,16 @@ CURLcode Curl_proxyCONNECT(struct connectdata *conn,
           break;
         }
 
-        /* loop every second at least, less if the timeout is near */
-        switch (SOCKET_READABLE(tunnelsocket, check<1000L?check:1000)) {
+        /* we wait a total of a second at most for each loop if no data avail.
+           this is because the progress function should be called at the
+           documented interval of at least once a second.
+           the time is split between SOCKET_READABLE (max 900ms) and Curl_read
+           returning CURLE_AGAIN (max 100ms). */
+        pending = conn_has_data_pending(conn, sockindex);
+        if(!pending)
+          pending = SOCKET_READABLE(tunnelsocket, check<900L?check:900);
+
+        switch(pending) {
         case -1: /* select() error, stop reading */
           error = SELECT_ERROR;
           failf(data, "Proxy CONNECT aborted due to select/poll error");
@@ -333,8 +352,10 @@ CURLcode Curl_proxyCONNECT(struct connectdata *conn,
             return CURLE_RECV_ERROR;
           }
           result = Curl_read(conn, tunnelsocket, ptr, 1, &gotbytes);
-          if(result==CURLE_AGAIN)
+          if(result == CURLE_AGAIN) {
+            Curl_wait_ms(check < 100 ? (int)check : 100);
             continue; /* go loop yourself */
+          }
           else if(result)
             keepon = FALSE;
           else if(gotbytes <= 0) {
@@ -553,9 +574,10 @@ CURLcode Curl_proxyCONNECT(struct connectdata *conn,
           }
           break;
         } /* switch */
-        if(Curl_pgrsUpdate(conn))
-          return CURLE_ABORTED_BY_CALLBACK;
       } /* while there's buffer left and loop is requested */
+
+      if(Curl_pgrsUpdate(conn))
+        return CURLE_ABORTED_BY_CALLBACK;
 
       if(error)
         return CURLE_RECV_ERROR;
