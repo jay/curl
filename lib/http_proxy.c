@@ -304,11 +304,11 @@ CURLcode Curl_proxyCONNECT(struct connectdata *conn,
       char *ptr;
       char *line_start;
 
-      ptr=data->state.buffer;
+      ptr = data->state.buffer;
       line_start = ptr;
 
-      nread=0;
-      perline=0;
+      nread = 0;
+      perline = 0;
 
       while(nread < BUFSIZE && keepon && !error) {
         int writetype;
@@ -365,12 +365,12 @@ CURLcode Curl_proxyCONNECT(struct connectdata *conn,
           /* This means we are currently ignoring a response-body */
 
           nread = 0; /* make next read start over in the read buffer */
-          ptr=data->state.buffer;
+          ptr = data->state.buffer;
           if(cl) {
             /* A Content-Length based body: simply count down the counter
                and make sure to break out of the loop when we're done! */
             cl--;
-            if(cl<=0) {
+            if(cl <= 0) {
               keepon = FALSE;
               break;
             }
@@ -379,7 +379,7 @@ CURLcode Curl_proxyCONNECT(struct connectdata *conn,
             /* chunked-encoded body, so we need to do the chunked dance
                properly to know when the end of the body is reached */
             CHUNKcode r;
-            ssize_t tookcareof=0;
+            ssize_t tookcareof = 0;
 
             /* now parse the chunked piece of data so that we can
                properly tell when the stream ends */
@@ -439,7 +439,7 @@ CURLcode Curl_proxyCONNECT(struct connectdata *conn,
           /* end of response-headers from the proxy */
           nread = 0; /* make next read start over in the read
                         buffer */
-          ptr=data->state.buffer;
+          ptr = data->state.buffer;
           if((407 == k->httpcode) && !data->state.authproblem) {
             /* If we get a 407 response code with content length
                when we have no auth problem, we must ignore the
@@ -483,17 +483,17 @@ CURLcode Curl_proxyCONNECT(struct connectdata *conn,
               /* without content-length or chunked encoding, we
                  can't keep the connection alive since the close is
                  the end signal so we bail out at once instead */
-              keepon=FALSE;
+              keepon = FALSE;
             }
           }
           else
             keepon = FALSE;
           /* we did the full CONNECT treatment, go to COMPLETE */
           conn->tunnel_state[sockindex] = TUNNEL_COMPLETE;
-          break; /* breaks out of for-loop, not switch() */
+          continue;
         }
 
-        line_start[perline]=0; /* zero terminate the buffer */
+        line_start[perline] = 0; /* zero terminate the buffer */
         if((checkprefix("WWW-Authenticate:", line_start) &&
             (401 == k->httpcode)) ||
            (checkprefix("Proxy-authenticate:", line_start) &&
@@ -533,8 +533,7 @@ CURLcode Curl_proxyCONNECT(struct connectdata *conn,
             /* A server MUST NOT send any Transfer-Encoding or
                Content-Length header fields in a 2xx (Successful)
                response to CONNECT. (RFC 7231 section 4.3.6) */
-            failf(data, "Transfer-Encoding: in %03d response",
-                  k->httpcode);
+            failf(data, "Transfer-Encoding: in %03d response", k->httpcode);
             return CURLE_RECV_ERROR;
           }
           infof(data, "CONNECT responded chunked\n");
@@ -542,8 +541,7 @@ CURLcode Curl_proxyCONNECT(struct connectdata *conn,
           /* init our chunky engine */
           Curl_httpchunk_init(conn);
         }
-        else if(Curl_compareheader(line_start,
-                                   "Proxy-Connection:", "close"))
+        else if(Curl_compareheader(line_start, "Proxy-Connection:", "close"))
           closeConnection = TRUE;
         else if(2 == sscanf(line_start, "HTTP/1.%d %d",
                             &subversion,
