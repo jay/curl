@@ -325,9 +325,7 @@
 #endif
 
 #include <stdio.h>
-#ifdef HAVE_ASSERT_H
 #include <assert.h>
-#endif
 
 #ifdef __TANDEM /* for nsr-tandem-nsk systems */
 #include <floss.h>

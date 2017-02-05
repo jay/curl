@@ -34,9 +34,7 @@
 
 #ifdef USE_DARWINSSL
 
-#ifdef HAVE_LIMITS_H
 #include <limits.h>
-#endif
 
 #include <Security/Security.h>
 #include <Security/SecureTransport.h>

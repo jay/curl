@@ -3078,10 +3078,8 @@ AC_CHECK_HEADERS(
         sys/socket.h \
         sys/ioctl.h \
         sys/uio.h \
-        assert.h \
         unistd.h \
         stdlib.h \
-        limits.h \
         arpa/inet.h \
         net/if.h \
         netinet/in.h \

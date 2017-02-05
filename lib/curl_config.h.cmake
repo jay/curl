@@ -121,9 +121,6 @@
 /* Define to 1 if you have the <arpa/tftp.h> header file. */
 #cmakedefine HAVE_ARPA_TFTP_H 1
 
-/* Define to 1 if you have the <assert.h> header file. */
-#cmakedefine HAVE_ASSERT_H 1
-
 /* Define to 1 if you have the `basename' function. */
 #cmakedefine HAVE_BASENAME 1
 
@@ -400,9 +397,6 @@
 
 /* if zlib is available */
 #cmakedefine HAVE_LIBZ 1
-
-/* Define to 1 if you have the <limits.h> header file. */
-#cmakedefine HAVE_LIMITS_H 1
 
 /* if your compiler supports LL */
 #cmakedefine HAVE_LL 1

@@ -956,7 +956,7 @@ static int dprintf_formatf(
            output characters */
         (sprintf)(work, formatbuf, p->data.dnum);
 #ifdef CURLDEBUG
-        assert(strlen(work) <= sizeof(work));
+        DEBUGASSERT(strlen(work) <= sizeof(work));
 #endif
         for(fptr=work; *fptr; fptr++)
           OUTCHAR(*fptr);

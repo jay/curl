@@ -449,16 +449,27 @@ sub scanfile {
 
         # scan for use of banned functions
         if($l =~ /^(.*\W)
-                   (gets|
-	            strtok|
+                   (assert|
+                    gets|
+                    strtok|
                     v?sprintf|
                     (str|_mbs|_tcs|_wcs)n?cat|
                     LoadLibrary(Ex)?(A|W)?)
                    \s*\(
                  /x) {
-            checkwarn("BANNEDFUNC",
-                      $line, length($1), $file, $ol,
-                      "use of $2 is banned");
+            if($2 eq "assert") {
+                # assert is not banned in tests/
+                if($file !~ /tests[\\\/]/) {
+                    checkwarn("BANNEDFUNC",
+                              $line, length($1), $file, $ol,
+                              "use of $2 is banned, use DEBUGASSERT");
+                }
+            }
+            else {
+                checkwarn("BANNEDFUNC",
+                          $line, length($1), $file, $ol,
+                          "use of $2 is banned");
+            }
         }
 
         # scan for use of non-binary fopen without the macro

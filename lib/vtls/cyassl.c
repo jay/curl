@@ -44,9 +44,7 @@ and that's a problem since options.h hasn't been included yet. */
 #include <cyassl/options.h>
 #endif
 
-#ifdef HAVE_LIMITS_H
 #include <limits.h>
-#endif
 
 #include "urldata.h"
 #include "sendf.h"

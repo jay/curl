@@ -414,7 +414,8 @@ typedef int sig_atomic_t;
  * Macro used to include assertion code only in debug builds.
  */
 
-#if defined(DEBUGBUILD) && defined(HAVE_ASSERT_H)
+#if defined(DEBUGBUILD)
+/** !checksrc! disable BANNEDFUNC 1 **/
 #define DEBUGASSERT(x) assert(x)
 #else
 #define DEBUGASSERT(x) do { } WHILE_FALSE

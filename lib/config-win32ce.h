@@ -33,9 +33,6 @@
 /* Define if you have the <arpa/inet.h> header file.  */
 /* #define HAVE_ARPA_INET_H 1 */
 
-/* Define if you have the <assert.h> header file.  */
-/* #define HAVE_ASSERT_H 1 */
-
 /* Define if you have the <crypto.h> header file.  */
 /* #define HAVE_CRYPTO_H 1 */
 
@@ -53,9 +50,6 @@
 
 /* Define if you have the <io.h> header file.  */
 #define HAVE_IO_H 1
-
-/* Define if you have the <limits.h> header file.  */
-#define HAVE_LIMITS_H 1
 
 /* Define if you need the malloc.h header header file even with stdlib.h  */
 #define NEED_MALLOC_H 1

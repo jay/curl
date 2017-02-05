@@ -119,7 +119,7 @@ CURLcode Curl_rand(struct Curl_easy *data, unsigned int *rndptr,
   CURLcode result = CURLE_BAD_FUNCTION_ARGUMENT;
   unsigned int i;
 
-  assert(num > 0);
+  DEBUGASSERT(num > 0);
 
   for(i = 0; i < num; i++) {
     result = randit(data, rndptr++);

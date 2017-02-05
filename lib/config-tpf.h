@@ -98,9 +98,6 @@
 /* Define to 1 if you have the <arpa/tftp.h> header file. */
 /* #undef HAVE_ARPA_TFTP_H */
 
-/* Define to 1 if you have the <assert.h> header file. */
-#define HAVE_ASSERT_H 1
-
 /* Define to 1 if you have the `basename' function. */
 #define HAVE_BASENAME 1
 
@@ -283,9 +280,6 @@
 
 /* if zlib is available */
 /* #undef HAVE_LIBZ */
-
-/* Define to 1 if you have the <limits.h> header file. */
-#define HAVE_LIMITS_H 1
 
 /* if your compiler supports LL */
 #define HAVE_LL 1
