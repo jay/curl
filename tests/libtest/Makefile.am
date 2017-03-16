@@ -58,6 +58,8 @@ CFLAG_CURL_SYMBOL_HIDING = @CFLAG_CURL_SYMBOL_HIDING@
 # Prevent LIBS from being used for all link targets
 LIBS = $(BLANK_AT_MAKETIME)
 
+LDFLAGS = -Wl,-rpath "-Wl,$(abs_top_builddir)/lib/.libs" @LDFLAGS@
+
 if USE_EXPLICIT_LIB_DEPS
 SUPPORTFILES_LIBS = $(top_builddir)/lib/libcurl.la @LIBCURL_LIBS@
 TESTUTIL_LIBS = $(top_builddir)/lib/libcurl.la @LIBCURL_LIBS@
@@ -68,9 +70,6 @@ endif
 
 # Dependencies (may need to be overriden)
 LDADD = $(SUPPORTFILES_LIBS)
-
-LDFLAGS = -Wl,-rpath "-Wl,$(abs_top_builddir)/lib/.libs" @LDFLAGS@
-
 DEPENDENCIES = $(top_builddir)/lib/libcurl.la
 
 # Makefile.inc provides the source defines (TESTUTIL, SUPPORTFILES,

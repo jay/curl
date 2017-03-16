@@ -59,11 +59,11 @@ EXTRA_DIST = Makefile.inc
 # Prevent LIBS from being used for all link targets
 LIBS = $(BLANK_AT_MAKETIME)
 
+LDFLAGS = -Wl,-rpath "-Wl,$(abs_top_builddir)/lib/.libs" @LDFLAGS@
+
 LDADD = $(top_builddir)/src/libcurltool.la   \
         $(top_builddir)/lib/libcurlu.la      \
         @LDFLAGS@ @LIBCURL_LIBS@
-
-LDFLAGS = -Wl,-rpath "-Wl,$(abs_top_builddir)/lib/.libs" @LDFLAGS@
 
 DEPENDENCIES = $(top_builddir)/src/libcurltool.la \
                $(top_builddir)/lib/libcurlu.la
