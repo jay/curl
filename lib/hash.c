@@ -91,10 +91,8 @@ Curl_hash_init(struct curl_hash *h,
     }
     return 0; /* fine */
   }
-  else {
-    h->slots = 0;
-    return 1; /* failure */
-  }
+  h->slots = 0;
+  return 1; /* failure */
 }
 
 static struct curl_hash_element *
@@ -135,7 +133,7 @@ Curl_hash_add(struct curl_hash *h, void *key, size_t key_len, void *p)
 {
   struct curl_hash_element  *he;
   struct curl_llist_element *le;
-  struct curl_llist *l = FETCH_LIST (h, key, key_len);
+  struct curl_llist *l = FETCH_LIST(h, key, key_len);
 
   for(le = l->head; le; le = le->next) {
     he = (struct curl_hash_element *) le->ptr;
@@ -291,9 +289,9 @@ Curl_hash_clean_with_criterium(struct curl_hash *h, void *user,
   }
 }
 
-size_t Curl_hash_str(void* key, size_t key_length, size_t slots_num)
+size_t Curl_hash_str(void *key, size_t key_length, size_t slots_num)
 {
-  const char* key_str = (const char *) key;
+  const char *key_str = (const char *) key;
   const char *end = key_str + key_length;
   unsigned long h = 5381;
 
@@ -347,10 +345,8 @@ Curl_hash_next_element(struct curl_hash_iterator *iter)
     struct curl_hash_element *he = iter->current_element->ptr;
     return he;
   }
-  else {
-    iter->current_element = NULL;
-    return NULL;
-  }
+  iter->current_element = NULL;
+  return NULL;
 }
 
 #if 0 /* useful function for debugging hashes and their contents */

@@ -56,7 +56,7 @@ git
 
  All changes to the sources are committed to the git repository as soon as
  they're somewhat verified to work. Changes shall be committed as independently
- as possible so that individual changes can be easier spotted and tracked
+ as possible so that individual changes can be easily spotted and tracked
  afterwards.
 
  Tagging shall be used extensively, and by the time we release new archives we
@@ -88,7 +88,7 @@ Dependencies
  - MIT Kerberos 1.2.4
  - GSKit        V5R3M0
  - NSS          3.14.x
- - axTLS        1.2.7
+ - axTLS        2.1.0
  - PolarSSL     1.3.0
  - Heimdal      ?
  - nghttp2      1.0.0
@@ -98,7 +98,7 @@ Operating Systems
 
  On systems where configure runs, we aim at working on them all - if they have
  a suitable C compiler. On systems that don't run configure, we strive to keep
- curl running fine on:
+ curl running correctly on:
 
  - Windows      98
  - AS/400       V5R3M0
@@ -126,13 +126,13 @@ Build tools
 Windows vs Unix
 ===============
 
- There are a few differences in how to program curl the unix way compared to
- the Windows way. The four perhaps most notable details are:
+ There are a few differences in how to program curl the Unix way compared to
+ the Windows way. Perhaps the four most notable details are:
 
  1. Different function names for socket operations.
 
    In curl, this is solved with defines and macros, so that the source looks
-   the same at all places except for the header file that defines them. The
+   the same in all places except for the header file that defines them. The
    macros in use are sclose(), sread() and swrite().
 
  2. Windows requires a couple of init calls for the socket stuff.
@@ -142,7 +142,7 @@ Windows vs Unix
    behaviour.
 
  3. The file descriptors for network communication and file operations are
-    not easily interchangeable as in unix.
+    not as easily interchangeable as in Unix.
 
    We avoid this by not trying any funny tricks on file descriptors.
 
@@ -156,11 +156,11 @@ Windows vs Unix
  conditionals that deal with features *should* instead be in the format
  `#ifdef HAVE_THAT_WEIRD_FUNCTION`. Since Windows can't run configure scripts,
  we maintain a `curl_config-win32.h` file in lib directory that is supposed to
- look exactly as a `curl_config.h` file would have looked like on a Windows
+ look exactly like a `curl_config.h` file would have looked like on a Windows
  machine!
 
  Generally speaking: always remember that this will be compiled on dozens of
- operating systems. Don't walk on the edge.
+ operating systems. Don't walk on the edge!
 
 <a name="Library"></a>
 Library
@@ -174,7 +174,7 @@ Library
  rather small and easy-to-follow. All the ones prefixed with `curl_easy` are
  put in the lib/easy.c file.
 
- `curl_global_init_()` and `curl_global_cleanup()` should be called by the
+ `curl_global_init()` and `curl_global_cleanup()` should be called by the
  application to initialize and clean up global stuff in the library. As of
  today, it can handle the global SSL initing if SSL is enabled and it can init
  the socket layer on windows machines. libcurl itself has no "global" scope.
@@ -184,14 +184,14 @@ Library
 
  [ `curl_easy_init()`][2] allocates an internal struct and makes some
  initializations.  The returned handle does not reveal internals. This is the
- 'Curl_easy' struct which works as an "anchor" struct for all `curl_easy`
+ `Curl_easy` struct which works as an "anchor" struct for all `curl_easy`
  functions. All connections performed will get connect-specific data allocated
  that should be used for things related to particular connections/requests.
 
  [`curl_easy_setopt()`][1] takes three arguments, where the option stuff must
  be passed in pairs: the parameter-ID and the parameter-value. The list of
  options is documented in the man page. This function mainly sets things in
- the 'Curl_easy' struct.
+ the `Curl_easy` struct.
 
  `curl_easy_perform()` is just a wrapper function that makes use of the multi
  API.  It basically calls `curl_multi_init()`, `curl_multi_add_handle()`,
@@ -218,7 +218,7 @@ Curl_connect()
    This function makes sure there's an allocated and initiated 'connectdata'
    struct that is used for this particular connection only (although there may
    be several requests performed on the same connect). A bunch of things are
-   inited/inherited from the Curl_easy struct.
+   inited/inherited from the `Curl_easy` struct.
 
 <a name="Curl_do"></a>
 Curl_do()
@@ -250,8 +250,8 @@ Curl_readwrite()
 
    Called during the transfer of the actual protocol payload.
 
-   During transfer, the progress functions in lib/progress.c are called at a
-   frequent interval (or at the user's choice, a specified callback might get
+   During transfer, the progress functions in lib/progress.c are called at
+   frequent intervals (or at the user's choice, a specified callback might get
    called). The speedcheck functions in lib/speedcheck.c are also used to
    verify that the transfer is as fast as required.
 
@@ -272,7 +272,7 @@ Curl_disconnect()
    When doing normal connections and transfers, no one ever tries to close any
    connections so this is not normally called when `curl_easy_perform()` is
    used. This function is only used when we are certain that no more transfers
-   is going to be made on the connection. It can be also closed by force, or
+   are going to be made on the connection. It can be also closed by force, or
    it can be called to make sure that libcurl doesn't keep too many
    connections alive at the same time.
 
@@ -290,7 +290,7 @@ HTTP(S)
  base64-functions for user+password stuff (and more) is in (lib/base64.c) and
  all functions for parsing and sending cookies are found in (lib/cookie.c).
 
- HTTPS uses in almost every means the same procedure as HTTP, with only two
+ HTTPS uses in almost every case the same procedure as HTTP, with only two
  exceptions: the connect procedure is different and the function used to read
  or write from the socket is different, although the latter fact is hidden in
  the source by the use of `Curl_read()` for reading and `Curl_write()` for
@@ -301,8 +301,7 @@ HTTP(S)
 
  An interesting detail with the HTTP(S) request, is the `Curl_add_buffer()`
  series of functions we use. They append data to one single buffer, and when
- the building is done the entire request is sent off in one single write. This
- is done this way to overcome problems with flawed firewalls and lame servers.
+ the building is finished the entire request is sent off in one single write. This is done this way to overcome problems with flawed firewalls and lame servers.
 
 <a name="ftp"></a>
 FTP
@@ -385,23 +384,23 @@ Persistent Connections
  The persistent connection support in libcurl requires some considerations on
  how to do things inside of the library.
 
- - The 'Curl_easy' struct returned in the [`curl_easy_init()`][2] call
+ - The `Curl_easy` struct returned in the [`curl_easy_init()`][2] call
    must never hold connection-oriented data. It is meant to hold the root data
    as well as all the options etc that the library-user may choose.
 
- - The 'Curl_easy' struct holds the "connection cache" (an array of
+ - The `Curl_easy` struct holds the "connection cache" (an array of
    pointers to 'connectdata' structs).
 
  - This enables the 'curl handle' to be reused on subsequent transfers.
 
  - When libcurl is told to perform a transfer, it first checks for an already
    existing connection in the cache that we can use. Otherwise it creates a
-   new one and adds that the cache. If the cache is full already when a new
-   connection is added added, it will first close the oldest unused one.
+   new one and adds that to the cache. If the cache is full already when a new
+   connection is added, it will first close the oldest unused one.
 
  - When the transfer operation is complete, the connection is left
    open. Particular options may tell libcurl not to, and protocols may signal
-   closure on connections and then they won't be kept open of course.
+   closure on connections and then they won't be kept open, of course.
 
  - When `curl_easy_cleanup()` is called, we close all still opened connections,
    unless of course the multi interface "owns" the connections.
@@ -414,7 +413,7 @@ multi interface/non-blocking
 ============================
 
  The multi interface is a non-blocking interface to the library. To make that
- interface work as good as possible, no low-level functions within libcurl
+ interface work as well as possible, no low-level functions within libcurl
  must be written to work in a blocking manner. (There are still a few spots
  violating this rule.)
 
@@ -465,7 +464,7 @@ Return Codes and Informationals
  description.
 
  In aiding the user to understand what's happening and to debug curl usage, we
- must supply a fair amount of informational messages by using the
+ must supply a fair number of informational messages by using the
  `Curl_infof()` function. Those messages are only displayed when the user
  explicitly asks for them. They are best used when revealing information that
  isn't otherwise obvious.
@@ -485,11 +484,11 @@ Client
  main() resides in `src/tool_main.c`.
 
  `src/tool_hugehelp.c` is automatically generated by the mkhelp.pl perl script
- to display the complete "manual" and the src/tool_urlglob.c file holds the
+ to display the complete "manual" and the `src/tool_urlglob.c` file holds the
  functions used for the URL-"globbing" support. Globbing in the sense that the
  {} and [] expansion stuff is there.
 
- The client mostly messes around to setup its 'config' struct properly, then
+ The client mostly sets up its 'config' struct properly, then
  it calls the `curl_easy_*()` functions of the library and when it gets back
  control after the `curl_easy_perform()` it cleans up the library, checks
  status and exits.
@@ -542,13 +541,13 @@ Test Suite
 
  The main test script is runtests.pl that will invoke test servers like
  httpserver.pl and ftpserver.pl before all the test cases are performed. The
- test suite currently only runs on unix-like platforms.
+ test suite currently only runs on Unix-like platforms.
 
  You'll find a description of the test suite in the tests/README file, and the
  test case data files in the tests/FILEFORMAT file.
 
  The test suite automatically detects if curl was built with the memory
- debugging enabled, and if it was it will detect memory leaks, too.
+ debugging enabled, and if it was, it will detect memory leaks, too.
 
 <a name="asyncdns"></a>
 Asynchronous name resolves
@@ -589,7 +588,7 @@ Asynchronous name resolves
 `curl_off_t`
 ==========
 
- curl_off_t is a data type provided by the external libcurl include
+ `curl_off_t` is a data type provided by the external libcurl include
  headers. It is the type meant to be used for the [`curl_easy_setopt()`][1]
  options that end with LARGE. The type is 64bit large on most modern
  platforms.
@@ -607,10 +606,10 @@ curlx
 
 `curlx_strtoofft()`
 -------------------
-   A macro that converts a string containing a number to a curl_off_t number.
-   This might use the curlx_strtoll() function which is provided as source
+   A macro that converts a string containing a number to a `curl_off_t` number.
+   This might use the `curlx_strtoll()` function which is provided as source
    code in strtoofft.c. Note that the function is only provided if no
-   strtoll() (or equivalent) function exist on your platform. If curl_off_t
+   strtoll() (or equivalent) function exist on your platform. If `curl_off_t`
    is only a 32 bit number on your platform, this macro uses strtol().
 
 `curlx_tvnow()`
@@ -624,17 +623,17 @@ curlx
 
 `curlx_tvdiff_secs()`
 ---------------------
-   returns the same as curlx_tvdiff but with full usec resolution (as a
+   returns the same as `curlx_tvdiff` but with full usec resolution (as a
    double)
 
 Future
 ------
 
- Several functions will be removed from the public curl_ name space in a
- future libcurl release. They will then only become available as curlx_
+ Several functions will be removed from the public `curl_` name space in a
+ future libcurl release. They will then only become available as `curlx_`
  functions instead. To make the transition easier, we already today provide
- these functions with the curlx_ prefix to allow sources to get built properly
- with the new function names. The functions this concerns are:
+ these functions with the `curlx_` prefix to allow sources to be built
+ properly with the new function names. The concerned functions are:
 
  - `curlx_getenv`
  - `curlx_strequal`
@@ -659,7 +658,7 @@ Content Encoding
  [HTTP/1.1][4] specifies that a client may request that a server encode its
  response. This is usually used to compress a response using one of a set of
  commonly available compression techniques. These schemes are 'deflate' (the
- zlib algorithm), 'gzip' and 'compress'. A client requests that the sever
+ zlib algorithm), 'gzip' and 'compress'. A client requests that the server
  perform an encoding by including an Accept-Encoding header in the request
  document. The value of the header should be one of the recognized tokens
  'deflate', ... (there's a way to register new schemes/tokens, see sec 3.5 of
@@ -719,7 +718,7 @@ hostip.c explained
 
  this host has getaddrinfo() and family, and thus we use that. The host may
  not be able to resolve IPv6, but we don't really have to take that into
- account. Hosts that aren't IPv6-enabled have CURLRES_IPV4 defined.
+ account. Hosts that aren't IPv6-enabled have `CURLRES_IPV4` defined.
 
 ## `CURLRES_ARES`
 
@@ -750,7 +749,7 @@ hostip.c explained
  - hostip6.c     - IPv6 specific functions
 
  The hostip.h is the single united header file for all this. It defines the
- `CURLRES_*` defines based on the config*.h and curl_setup.h defines.
+ `CURLRES_*` defines based on the config*.h and `curl_setup.h` defines.
 
 <a name="memoryleak"></a>
 Track Down Memory Leaks
@@ -767,7 +766,7 @@ Track Down Memory Leaks
 
   Rebuild libcurl with -DCURLDEBUG (usually, rerunning configure with
   --enable-debug fixes this). 'make clean' first, then 'make' so that all
-  files actually are rebuilt properly. It will also make sense to build
+  files are actually rebuilt properly. It will also make sense to build
   libcurl with the debug option (usually -g to the compiler) so that debugging
   it will be easier if you actually do find a leak in the library.
 
@@ -828,16 +827,16 @@ Track Down Memory Leaks
   We also added a timer callback that makes libcurl call the application when
   the timeout value changes, and you set that with [`curl_multi_setopt()`][9]
   and the [`CURLMOPT_TIMERFUNCTION`][10] option. To get this to work,
-  Internally, there's an added a struct to each easy handle in which we store
+  Internally, there's an added struct to each easy handle in which we store
   an "expire time" (if any). The structs are then "splay sorted" so that we
   can add and remove times from the linked list and yet somewhat swiftly
-  figure out both how long time there is until the next nearest timer expires
+  figure out both how long there is until the next nearest timer expires
   and which timer (handle) we should take care of now. Of course, the upside
   of all this is that we get a [`curl_multi_timeout()`][8] that should also
   work with old-style applications that use [`curl_multi_perform()`][11].
 
   We created an internal "socket to easy handles" hash table that given
-  a socket (file descriptor) return the easy handle that waits for action on
+  a socket (file descriptor) returns the easy handle that waits for action on
   that socket.  This hash is made using the already existing hash code
   (previously only used for the DNS cache).
 
@@ -858,7 +857,7 @@ for older and later versions as things don't change drastically that often.
 
 ## Curl_easy
 
-  The Curl_easy struct is the one returned to the outside in the external API
+  The `Curl_easy` struct is the one returned to the outside in the external API
   as a "CURL *". This is usually known as an easy handle in API documentations
   and examples.
 
@@ -866,27 +865,27 @@ for older and later versions as things don't change drastically that often.
   'connectdata' struct. When a transfer is about to be made, libcurl will
   either create a new connection or re-use an existing one. The particular
   connectdata that is used by this handle is pointed out by
-  Curl_easy->easy_conn.
+  `Curl_easy->easy_conn`.
 
   Data and information that regard this particular single transfer is put in
   the SingleRequest sub-struct.
 
-  When the Curl_easy struct is added to a multi handle, as it must be in order
-  to do any transfer, the ->multi member will point to the `Curl_multi` struct
-  it belongs to. The ->prev and ->next members will then be used by the multi
-  code to keep a linked list of Curl_easy structs that are added to that same
-  multi handle. libcurl always uses multi so ->multi *will* point to a
-  `Curl_multi` when a transfer is in progress.
+  When the `Curl_easy` struct is added to a multi handle, as it must be in
+  order to do any transfer, the ->multi member will point to the `Curl_multi`
+  struct it belongs to. The ->prev and ->next members will then be used by the
+  multi code to keep a linked list of `Curl_easy` structs that are added to
+  that same multi handle. libcurl always uses multi so ->multi *will* point to
+  a `Curl_multi` when a transfer is in progress.
 
-  ->mstate is the multi state of this particular Curl_easy. When
+  ->mstate is the multi state of this particular `Curl_easy`. When
   `multi_runsingle()` is called, it will act on this handle according to which
   state it is in. The mstate is also what tells which sockets to return for a
-  specific Curl_easy when [`curl_multi_fdset()`][12] is called etc.
+  specific `Curl_easy` when [`curl_multi_fdset()`][12] is called etc.
 
   The libcurl source code generally use the name 'data' for the variable that
-  points to the Curl_easy.
+  points to the `Curl_easy`.
 
-  When doing multiplexed HTTP/2 transfers, each Curl_easy is associated with
+  When doing multiplexed HTTP/2 transfers, each `Curl_easy` is associated with
   an individual stream, sharing the same connectdata struct. Multiplexing
   makes it even more important to keep things associated with the right thing!
 
@@ -901,21 +900,21 @@ for older and later versions as things don't change drastically that often.
   the connection can't be kept alive, the connection will be closed after use
   and then this struct can be removed from the cache and freed.
 
-  Thus, the same Curl_easy can be used multiple times and each time select
+  Thus, the same `Curl_easy` can be used multiple times and each time select
   another connectdata struct to use for the connection. Keep this in mind, as
   it is then important to consider if options or choices are based on the
-  connection or the Curl_easy.
+  connection or the `Curl_easy`.
 
   Functions in libcurl will assume that connectdata->data points to the
-  Curl_easy that uses this connection (for the moment).
+  `Curl_easy` that uses this connection (for the moment).
 
   As a special complexity, some protocols supported by libcurl require a
   special disconnect procedure that is more than just shutting down the
   socket. It can involve sending one or more commands to the server before
   doing so. Since connections are kept in the connection cache after use, the
-  original Curl_easy may no longer be around when the time comes to shut down
+  original `Curl_easy` may no longer be around when the time comes to shut down
   a particular connection. For this purpose, libcurl holds a special dummy
-  `closure_handle` Curl_easy in the `Curl_multi` struct to use when needed.
+  `closure_handle` `Curl_easy` in the `Curl_multi` struct to use when needed.
 
   FTP uses two TCP connections for a typical transfer but it keeps both in
   this single struct and thus can be considered a single connection for most
@@ -929,36 +928,37 @@ for older and later versions as things don't change drastically that often.
   Internally, the easy interface is implemented as a wrapper around multi
   interface functions. This makes everything multi interface.
 
-  `Curl_multi` is the multi handle struct exposed as "CURLM *" in external APIs.
+  `Curl_multi` is the multi handle struct exposed as "CURLM *" in external
+  APIs.
 
-  This struct holds a list of Curl_easy structs that have been added to this
+  This struct holds a list of `Curl_easy` structs that have been added to this
   handle with [`curl_multi_add_handle()`][13]. The start of the list is
-  ->easyp and ->num_easy is a counter of added Curl_easys.
+  `->easyp` and `->num_easy` is a counter of added `Curl_easy`s.
 
-  ->msglist is a linked list of messages to send back when
+  `->msglist` is a linked list of messages to send back when
   [`curl_multi_info_read()`][14] is called. Basically a node is added to that
-  list when an individual Curl_easy's transfer has completed.
+  list when an individual `Curl_easy`'s transfer has completed.
 
-  ->hostcache points to the name cache. It is a hash table for looking up name
-  to IP. The nodes have a limited life time in there and this cache is meant
-  to reduce the time for when the same name is wanted within a short period of
-  time.
+  `->hostcache` points to the name cache. It is a hash table for looking up
+  name to IP. The nodes have a limited life time in there and this cache is
+  meant to reduce the time for when the same name is wanted within a short
+  period of time.
 
-  ->timetree points to a tree of Curl_easys, sorted by the remaining time
-  until it should be checked - normally some sort of timeout. Each Curl_easy
+  `->timetree` points to a tree of `Curl_easy`s, sorted by the remaining time
+  until it should be checked - normally some sort of timeout. Each `Curl_easy`
   has one node in the tree.
 
-  ->sockhash is a hash table to allow fast lookups of socket descriptor to
-  which Curl_easy that uses that descriptor. This is necessary for the
+  `->sockhash` is a hash table to allow fast lookups of socket descriptor for
+  which `Curl_easy` uses that descriptor. This is necessary for the
   `multi_socket` API.
 
-  ->conn_cache points to the connection cache. It keeps track of all
+  `->conn_cache` points to the connection cache. It keeps track of all
   connections that are kept after use. The cache has a maximum size.
 
-  ->closure_handle is described in the 'connectdata' section.
+  `->closure_handle` is described in the 'connectdata' section.
 
   The libcurl source code generally use the name 'multi' for the variable that
-  points to the Curl_multi struct.
+  points to the `Curl_multi` struct.
 
 ## Curl_handler
 
@@ -971,41 +971,40 @@ for older and later versions as things don't change drastically that often.
   from a single array which is scanned through when a URL is given to libcurl
   to work with.
 
-  ->scheme is the URL scheme name, usually spelled out in uppercase. That's
-  "HTTP" or "FTP" etc. SSL versions of the protcol need its own `Curl_handler`
-  setup so HTTPS separate from HTTP.
+  `->scheme` is the URL scheme name, usually spelled out in uppercase. That's
+  "HTTP" or "FTP" etc. SSL versions of the protocol need their own `Curl_handler` setup so HTTPS separate from HTTP.
 
-  ->setup_connection is called to allow the protocol code to allocate protocol
-  specific data that then gets associated with that Curl_easy for the rest of
-  this transfer. It gets freed again at the end of the transfer. It will be
-  called before the 'connectdata' for the transfer has been selected/created.
-  Most protocols will allocate its private 'struct [PROTOCOL]' here and assign
-  Curl_easy->req.protop to point to it.
+  `->setup_connection` is called to allow the protocol code to allocate
+  protocol specific data that then gets associated with that `Curl_easy` for
+  the rest of this transfer. It gets freed again at the end of the transfer.
+  It will be called before the 'connectdata' for the transfer has been
+  selected/created. Most protocols will allocate its private
+  'struct [PROTOCOL]' here and assign `Curl_easy->req.protop` to point to it.
 
-  ->connect_it allows a protocol to do some specific actions after the TCP
+  `->connect_it` allows a protocol to do some specific actions after the TCP
   connect is done, that can still be considered part of the connection phase.
 
-  Some protocols will alter the connectdata->recv[] and connectdata->send[]
-  function pointers in this function.
+  Some protocols will alter the `connectdata->recv[]` and
+  `connectdata->send[]` function pointers in this function.
 
-  ->connecting is similarly a function that keeps getting called as long as the
-  protocol considers itself still in the connecting phase.
+  `->connecting` is similarly a function that keeps getting called as long as
+  the protocol considers itself still in the connecting phase.
 
-  ->do_it is the function called to issue the transfer request. What we call
+  `->do_it` is the function called to issue the transfer request. What we call
   the DO action internally. If the DO is not enough and things need to be kept
-  getting done for the entire DO sequence to complete, ->doing is then usually
-  also provided. Each protocol that needs to do multiple commands or similar
-  for do/doing need to implement their own state machines (see SCP, SFTP,
-  FTP). Some protocols (only FTP and only due to historical reasons) has a
-  separate piece of the DO state called `DO_MORE`.
+  getting done for the entire DO sequence to complete, `->doing` is then
+  usually also provided. Each protocol that needs to do multiple commands or
+  similar for do/doing need to implement their own state machines (see SCP,
+  SFTP, FTP). Some protocols (only FTP and only due to historical reasons) has
+  a separate piece of the DO state called `DO_MORE`.
 
-  ->doing keeps getting called while issuing the transfer request command(s)
+  `->doing` keeps getting called while issuing the transfer request command(s)
 
-  ->done gets called when the transfer is complete and DONE. That's after the
+  `->done` gets called when the transfer is complete and DONE. That's after the
   main data has been transferred.
 
-  ->do_more gets called during the `DO_MORE` state. The FTP protocol uses this
-  state when setting up the second connection.
+  `->do_more` gets called during the `DO_MORE` state. The FTP protocol uses
+  this state when setting up the second connection.
 
   ->`proto_getsock`
   ->`doing_getsock`
@@ -1034,11 +1033,11 @@ for older and later versions as things don't change drastically that often.
 
   - `PROTOPT_CLOSEACTION` - this protocol has actions to do before closing the
     connection. This flag is no longer used by code, yet still set for a bunch
-    protocol handlers.
+    of protocol handlers.
 
   - `PROTOPT_DIRLOCK` - "direction lock". The SSH protocols set this bit to
     limit which "direction" of socket actions that the main engine will
-    concern itself about.
+    concern itself with.
 
   - `PROTOPT_NONETWORK` - a protocol that doesn't use network (read file:)
 
@@ -1050,21 +1049,21 @@ for older and later versions as things don't change drastically that often.
 
 ## conncache
 
-  Is a hash table with connections for later re-use. Each Curl_easy has a
+  Is a hash table with connections for later re-use. Each `Curl_easy` has a
   pointer to its connection cache. Each multi handle sets up a connection
-  cache that all added Curl_easys share by default.
+  cache that all added `Curl_easy`s share by default.
 
 ## Curl_share
 
   The libcurl share API allocates a `Curl_share` struct, exposed to the
   external API as "CURLSH *".
 
-  The idea is that the struct can have a set of own versions of caches and
+  The idea is that the struct can have a set of its own versions of caches and
   pools and then by providing this struct in the `CURLOPT_SHARE` option, those
-  specific Curl_easys will use the caches/pools that this share handle
+  specific `Curl_easy`s will use the caches/pools that this share handle
   holds.
 
-  Then individual Curl_easy structs can be made to share specific things
+  Then individual `Curl_easy` structs can be made to share specific things
   that they otherwise wouldn't, such as cookies.
 
   The `Curl_share` struct can currently hold cookies, DNS cache and the SSL
@@ -1073,7 +1072,7 @@ for older and later versions as things don't change drastically that often.
 ## CookieInfo
 
   This is the main cookie struct. It holds all known cookies and related
-  information. Each Curl_easy has its own private CookieInfo even when
+  information. Each `Curl_easy` has its own private CookieInfo even when
   they are added to a multi handle. They can be made to share cookies by using
   the share API.
 

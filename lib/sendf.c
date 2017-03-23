@@ -122,6 +122,13 @@ static size_t convert_lineends(struct Curl_easy *data,
 #endif /* CURL_DO_LINEEND_CONV */
 
 #ifdef USE_RECV_BEFORE_SEND_WORKAROUND
+bool Curl_recv_has_postponed_data(struct connectdata *conn, int sockindex)
+{
+  struct postponed_data * const psnd = &(conn->postponed[sockindex]);
+  return psnd->buffer && psnd->allocated_size &&
+         psnd->recv_size > psnd->recv_processed;
+}
+
 static void pre_receive_plain(struct connectdata *conn, int num)
 {
   const curl_socket_t sockfd = conn->sock[num];
@@ -201,6 +208,12 @@ static ssize_t get_pre_recved(struct connectdata *conn, int num, char *buf,
 }
 #else  /* ! USE_RECV_BEFORE_SEND_WORKAROUND */
 /* Use "do-nothing" macros instead of functions when workaround not used */
+bool Curl_recv_has_postponed_data(struct connectdata *conn, int sockindex)
+{
+  (void)conn;
+  (void)sockindex;
+  return false;
+}
 #define pre_receive_plain(c,n) do {} WHILE_FALSE
 #define get_pre_recved(c,n,b,l) 0
 #endif /* ! USE_RECV_BEFORE_SEND_WORKAROUND */
@@ -488,7 +501,7 @@ static CURLcode pausewrite(struct Curl_easy *data,
  */
 CURLcode Curl_client_chop_write(struct connectdata *conn,
                                 int type,
-                                char * ptr,
+                                char *ptr,
                                 size_t len)
 {
   struct Curl_easy *data = conn->data;
@@ -552,10 +565,9 @@ CURLcode Curl_client_chop_write(struct connectdata *conn,
           failf(data, "Write callback asked for PAUSE when not supported!");
           return CURLE_WRITE_ERROR;
         }
-        else
-          return pausewrite(data, type, ptr, len);
+        return pausewrite(data, type, ptr, len);
       }
-      else if(wrote != chunklen) {
+      if(wrote != chunklen) {
         failf(data, "Failed writing body (%zu != %zu)", wrote, chunklen);
         return CURLE_WRITE_ERROR;
       }
@@ -571,7 +583,7 @@ CURLcode Curl_client_chop_write(struct connectdata *conn,
         return pausewrite(data, CLIENTWRITE_HEADER, ptr, len);
 
       if(wrote != chunklen) {
-        failf (data, "Failed writing header");
+        failf(data, "Failed writing header");
         return CURLE_WRITE_ERROR;
       }
     }
@@ -639,8 +651,7 @@ CURLcode Curl_read_plain(curl_socket_t sockfd,
 #endif
     if(return_error)
       return CURLE_AGAIN;
-    else
-      return CURLE_RECV_ERROR;
+    return CURLE_RECV_ERROR;
   }
 
   /* we only return number of bytes read when we return OK */
@@ -692,7 +703,7 @@ CURLcode Curl_read(struct connectdata *conn, /* connection data */
     }
     /* If we come here, it means that there is no data to read from the buffer,
      * so we read from the socket */
-    bytesfromsocket = CURLMIN(sizerequested, BUFSIZE * sizeof (char));
+    bytesfromsocket = CURLMIN(sizerequested, BUFSIZE * sizeof(char));
     buffertofill = conn->master_buffer;
   }
   else {
@@ -796,7 +807,7 @@ int Curl_debug(struct Curl_easy *data, curl_infotype type,
     char buffer[160];
     const char *t=NULL;
     const char *w="Data";
-    switch (type) {
+    switch(type) {
     case CURLINFO_HEADER_IN:
       w = "Header";
       /* FALLTHROUGH */

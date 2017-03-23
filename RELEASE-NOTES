@@ -1,18 +1,69 @@
-Curl and libcurl 7.51.0
+Curl and libcurl 7.54.0
 
- Public curl releases:         160
- Command line options:         185
- curl_easy_setopt() options:   224
+ Public curl releases:         165
+ Command line options:         207
+ curl_easy_setopt() options:   245
  Public functions in libcurl:  61
- Contributors:                 1445
+ Contributors:                 1507
 
 This release includes the following changes:
-
- o
+ o Add CURL_SSLVERSION_MAX_* constants to CURLOPT_SSLVERSION [19]
+ o Add --max-tls [19]
+ o Add CURLOPT_SUPPRESS_CONNECT_HEADERS [24]
+ o Add --suppress-connect-headers [24]
 
 This release includes the following bugfixes:
 
- o
+ o cmake: Replace invalid UTF-8 byte sequence [1]
+ o tests: use consistent environment variables for setting charset
+ o proxy: fixed a memory leak on OOM
+ o ftp: removed an erroneous free in an OOM path
+ o docs: de-duplicate file lists in the Makefiles [2]
+ o ftp: fixed a NULL pointer dereference on OOM
+ o gopher: fixed detection of an error condition from Curl_urldecode
+ o url: fix unix-socket support for proxy-disabled builds [3]
+ o test1139: allow for the possibility that the man page is not rebuilt
+ o cyassl: get library version string at runtime
+ o digest_sspi: fix compilation warning
+ o tests: enable HTTP/2 tests to run with non-default port numbers
+ o warnless: suppress compiler warning
+ o darwinssl: Warn that disabling host verify also disables SNI [4]
+ o configure: fix for --enable-pthreads [5]
+ o checksrc.bat: Ignore curl_config.h.in, curl_config.h
+ o no-keepalive.d: fix typo [6]
+ o configure: fix --with-zlib when a path is specified [7]
+ o build: fix gcc7 implicit fallthrough warnings [8]
+ o fix potential use of uninitialized variables [9]
+ o CURLOPT_SSL_CTX_FUNCTION.3: Fix EXAMPLE formatting errors [10]
+ o CMake: Reorganize SSL support, separate WinSSL and SSPI [11]
+ o CMake: Add DarwinSSL support [12]
+ o CMake: Add mbedTLS support [13]
+ o ares: return error at once if timed out before name resolve starts [14]
+ o BINDINGS: added C++, perl, go and Scilab bindings
+ o URL: return error on malformed URLs with junk after port number
+ o KNOWN_BUGS: Add DarwinSSL won't import PKCS#12 without a password [15]
+ o http2: Fix assertion error on redirect with CL=0 [16]
+ o updatemanpages.pl: Update man pages to use current date and versions [17]
+ o --insecure: clarify that this option is for server connections [18]
+ o mkhelp: simplified the gzip code
+ o build: fixed making man page in out-of-tree tarball builds
+ o tests: disabled 1903 due to flakiness
+ o openssl: add two /* FALLTHROUGH */ to satisfy coverity
+ o cmdline-opts: fixed a few typos
+ o authneg: clear auth.multi flag at http_done [20]
+ o curl_easy_reset: Also reset the authentication state [21]
+ o proxy: skip SSL initialization for closed connections [22]
+ o http_proxy: ignore TE and CL in CONNECT 2xx responses [23]
+ o tool_writeout: fixed a buffer read overrun on --write-out
+ o make: regenerate docs/curl.1 by running make in docs [25]
+ o winbuild: add basic support for OpenSSL 1.1.x [26]
+ o build: removed redundant DEPENDENCIES from makefiles
+ o CURLINFO_LOCAL_PORT.3: added example
+ o curl: show HTTPS-Proxy options on CURLE_SSL_CACERT [27]
+ o tests: strip more options from non-HTTP --libcurl tests
+ o tests: fixed the documented test server port numbers
+ o runtests.pl: fixed display of the Gopher IPv6 port number
+ o multi: fix streamclose() crash in debug mode [28]
 
 This release includes the following known bugs:
 
@@ -21,10 +72,45 @@ This release includes the following known bugs:
 This release would not have looked like this without help, code, reports and
 advice from friends like these:
 
-
+  Alexis La Goutte, Anatol Belski, Andrew Krieger, Antony74 on github,
+  Brian Carpenter, Carlo Cannas, Carlo Teubner, Dan Fandrich, Daniel Stenberg,
+  Desmond O. Chang, Giuseppe Persico, Greg Rowe, Isaac Boukris, Joel Depooter,
+  Jozef Kralik, Justin Clift, Marc-Antoine Perennou, Marcel Raad,
+  mccormickt12 on github, Michael Kaufmann, Michael Maltese, mkzero on github,
+  Nehal J Wani, Orange Tsai, Palo Markovic, Peter Pentchev, Peter Wu,
+  Ray Satiro, Simon Warta, Steve Brokenshire, Sylvestre Ledru,
+  Tatsuhiro Tsujikawa, Thomas Glanzmann, zelinchen on github,
+  (34 contributors)
 
         Thanks! (and sorry if I forgot to mention someone)
 
 References to bug reports and discussions on issues:
 
- [1] = https://curl.haxx.se/bug/?i=
+ [1] = https://curl.haxx.se/bug/?i=1275
+ [2] = https://curl.haxx.se/bug/?i=1287
+ [3] = https://curl.haxx.se/bug/?i=1289
+ [4] = https://curl.haxx.se/bug/?i=1240
+ [5] = https://curl.haxx.se/bug/?i=1295
+ [6] = https://curl.haxx.se/bug/?i=1301
+ [7] = https://curl.haxx.se/bug/?i=1292
+ [8] = https://curl.haxx.se/bug/?i=1297
+ [9] = https://curl.haxx.se/bug/?i=1304
+ [10] = https://curl.haxx.se/bug/?i=1290
+ [11] = https://curl.haxx.se/bug/?i=1228
+ [12] = https://curl.haxx.se/bug/?i=1228
+ [13] = https://curl.haxx.se/bug/?i=1228
+ [14] = https://curl.haxx.se/mail/lib-2017-03/0004.html
+ [15] = https://curl.haxx.se/bug/?i=1308
+ [16] = https://curl.haxx.se/bug/?i=1286
+ [17] = https://curl.haxx.se/bug/?i=1058
+ [18] = https://curl.haxx.se/mail/lib-2017-03/0002.html
+ [19] = https://curl.haxx.se/bug/?i=1166
+ [20] = https://curl.haxx.se/bug/?i=1095
+ [21] = https://curl.haxx.se/bug/?i=1095
+ [22] = https://curl.haxx.se/bug/?i=1239
+ [23] = https://curl.haxx.se/bug/?i=1317
+ [24] = https://curl.haxx.se/bug/?i=783
+ [25] = https://curl.haxx.se/mail/lib-2017-03/0017.html
+ [26] = https://curl.haxx.se/bug/?i=1322
+ [27] = https://curl.haxx.se/bug/?i=1331
+ [28] = https://curl.haxx.se/bug/?i=1329

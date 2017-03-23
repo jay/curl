@@ -5,7 +5,7 @@
  *                            | (__| |_| |  _ <| |___
  *                             \___|\___/|_| \_\_____|
  *
- * Copyright (C) 1998 - 2016, Daniel Stenberg, <daniel@haxx.se>, et al.
+ * Copyright (C) 1998 - 2017, Daniel Stenberg, <daniel@haxx.se>, et al.
  *
  * This software is licensed as described in the file COPYING, which
  * you should have received as part of this distribution. The terms
@@ -68,16 +68,15 @@
 #include "http.h" /* for HTTP proxy tunnel stuff */
 #include "socks.h"
 #include "imap.h"
-
 #include "strtoofft.h"
-#include "strequal.h"
+#include "strcase.h"
 #include "vtls/vtls.h"
 #include "connect.h"
 #include "strerror.h"
 #include "select.h"
 #include "multiif.h"
 #include "url.h"
-#include "rawstr.h"
+#include "strcase.h"
 #include "curl_sasl.h"
 #include "warnless.h"
 
@@ -108,7 +107,7 @@ static CURLcode imap_perform_authenticate(struct connectdata *conn,
                                           const char *initresp);
 static CURLcode imap_continue_authenticate(struct connectdata *conn,
                                            const char *resp);
-static void imap_get_message(char *buffer, char** outptr);
+static void imap_get_message(char *buffer, char **outptr);
 
 /*
  * IMAP protocol handler.
@@ -131,7 +130,8 @@ const struct Curl_handler Curl_handler_imap = {
   ZERO_NULL,                        /* readwrite */
   PORT_IMAP,                        /* defport */
   CURLPROTO_IMAP,                   /* protocol */
-  PROTOPT_CLOSEACTION               /* flags */
+  PROTOPT_CLOSEACTION|              /* flags */
+  PROTOPT_URLOPTIONS
 };
 
 #ifdef USE_SSL
@@ -271,7 +271,7 @@ static bool imap_matchresp(const char *line, size_t len, const char *cmd)
 
   /* Does the command name match and is it followed by a space character or at
      the end of line? */
-  if(line + cmd_len <= end && Curl_raw_nequal(line, cmd, cmd_len) &&
+  if(line + cmd_len <= end && strncasecompare(line, cmd, cmd_len) &&
      (line[cmd_len] == ' ' || line + cmd_len + 2 == end))
     return TRUE;
 
@@ -391,10 +391,10 @@ static bool imap_endofresp(struct connectdata *conn, char *line, size_t len,
  *
  * Gets the authentication message from the response buffer.
  */
-static void imap_get_message(char *buffer, char** outptr)
+static void imap_get_message(char *buffer, char **outptr)
 {
   size_t len = 0;
-  char* message = NULL;
+  char *message = NULL;
 
   /* Find the start of the message */
   for(message = buffer + 2; *message == ' ' || *message == '\t'; message++)
@@ -953,7 +953,7 @@ static CURLcode imap_state_starttls_resp(struct connectdata *conn,
 
   if(imapcode != 'O') {
     if(data->set.use_ssl != CURLUSESSL_TRY) {
-      failf(data, "STARTTLS denied. %c", imapcode);
+      failf(data, "STARTTLS denied");
       result = CURLE_USE_SSL_FAILED;
     }
     else
@@ -1935,7 +1935,7 @@ static CURLcode imap_parse_url_options(struct connectdata *conn)
     while(*ptr && *ptr != ';')
       ptr++;
 
-    if(strnequal(key, "AUTH=", 5))
+    if(strncasecompare(key, "AUTH=", 5))
       result = Curl_sasl_parse_url_auth_option(&imapc->sasl,
                                                value, ptr - value);
     else
@@ -2031,28 +2031,28 @@ static CURLcode imap_parse_url_path(struct connectdata *conn)
        PARTIAL) stripping of the trailing slash character if it is present.
 
        Note: Unknown parameters trigger a URL_MALFORMAT error. */
-    if(Curl_raw_equal(name, "UIDVALIDITY") && !imap->uidvalidity) {
+    if(strcasecompare(name, "UIDVALIDITY") && !imap->uidvalidity) {
       if(valuelen > 0 && value[valuelen - 1] == '/')
         value[valuelen - 1] = '\0';
 
       imap->uidvalidity = value;
       value = NULL;
     }
-    else if(Curl_raw_equal(name, "UID") && !imap->uid) {
+    else if(strcasecompare(name, "UID") && !imap->uid) {
       if(valuelen > 0 && value[valuelen - 1] == '/')
         value[valuelen - 1] = '\0';
 
       imap->uid = value;
       value = NULL;
     }
-    else if(Curl_raw_equal(name, "SECTION") && !imap->section) {
+    else if(strcasecompare(name, "SECTION") && !imap->section) {
       if(valuelen > 0 && value[valuelen - 1] == '/')
         value[valuelen - 1] = '\0';
 
       imap->section = value;
       value = NULL;
     }
-    else if(Curl_raw_equal(name, "PARTIAL") && !imap->partial) {
+    else if(strcasecompare(name, "PARTIAL") && !imap->partial) {
       if(valuelen > 0 && value[valuelen - 1] == '/')
         value[valuelen - 1] = '\0';
 

@@ -5,7 +5,7 @@
 #                            | (__| |_| |  _ <| |___
 #                             \___|\___/|_| \_\_____|
 #
-# Copyright (C) 1998 - 2016, Daniel Stenberg, <daniel@haxx.se>, et al.
+# Copyright (C) 1998 - 2017, Daniel Stenberg, <daniel@haxx.se>, et al.
 #
 # This software is licensed as described in the file COPYING, which
 # you should have received as part of this distribution. The terms
@@ -24,10 +24,13 @@ AUTOMAKE_OPTIONS = foreign
 
 ACLOCAL_AMFLAGS = -I m4
 
-CMAKE_DIST = CMakeLists.txt CMake/CMakeConfigurableFile.in	\
- CMake/CurlTests.c CMake/FindGSS.cmake CMake/OtherTests.cmake	\
- CMake/Platforms/WindowsCache.cmake CMake/Utilities.cmake	\
- include/curl/curlbuild.h.cmake CMake/Macros.cmake
+CMAKE_DIST = CMakeLists.txt CMake/CMakeConfigurableFile.in      \
+ CMake/CurlTests.c CMake/FindGSS.cmake CMake/OtherTests.cmake   \
+ CMake/Platforms/WindowsCache.cmake CMake/Utilities.cmake       \
+ include/curl/curlbuild.h.cmake CMake/Macros.cmake              \
+ CMake/CurlSymbolHiding.cmake CMake/FindCARES.cmake             \
+ CMake/FindLibSSH2.cmake CMake/FindNGHTTP2.cmake
+
 
 VC6_LIBTMPL = projects/Windows/VC6/lib/libcurl.tmpl
 VC6_LIBDSP = projects/Windows/VC6/lib/libcurl.dsp.dist
@@ -133,13 +136,12 @@ VC_DIST = projects/README                           \
  projects/Windows/VC14/src/curl.vcxproj.filters
 
 WINBUILD_DIST = winbuild/BUILD.WINDOWS.txt winbuild/gen_resp_file.bat	\
- winbuild/MakefileBuild.vc winbuild/Makefile.vc				\
- winbuild/Makefile.msvc.names
+ winbuild/MakefileBuild.vc winbuild/Makefile.vc
 
 EXTRA_DIST = CHANGES COPYING maketgz Makefile.dist curl-config.in	\
  RELEASE-NOTES buildconf libcurl.pc.in MacOSX-Framework scripts/zsh.pl	\
- $(CMAKE_DIST) $(VC_DIST) $(WINBUILD_DIST) lib/libcurl.vers.in          \
- buildconf.bat
+ scripts/updatemanpages.pl $(CMAKE_DIST) $(VC_DIST) $(WINBUILD_DIST)	\
+ lib/libcurl.vers.in buildconf.bat
 
 CLEANFILES = $(VC6_LIBDSP) $(VC6_SRCDSP) $(VC7_LIBVCPROJ) $(VC7_SRCVCPROJ)	\
  $(VC71_LIBVCPROJ) $(VC71_SRCVCPROJ) $(VC8_LIBVCPROJ) $(VC8_SRCVCPROJ)	\
@@ -149,8 +151,8 @@ CLEANFILES = $(VC6_LIBDSP) $(VC6_SRCDSP) $(VC7_LIBVCPROJ) $(VC7_SRCVCPROJ)	\
 
 bin_SCRIPTS = curl-config
 
-SUBDIRS = lib src include
-DIST_SUBDIRS = $(SUBDIRS) tests packages docs scripts
+SUBDIRS = lib docs src include
+DIST_SUBDIRS = $(SUBDIRS) tests packages scripts
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = libcurl.pc
@@ -190,6 +192,9 @@ test:
 
 test-full:
 	@(cd tests; $(MAKE) all full-test)
+
+test-nonflaky:
+	@(cd tests; $(MAKE) all nonflaky-test)
 
 test-torture:
 	@(cd tests; $(MAKE) all torture-test)

@@ -190,14 +190,15 @@ static CURLcode file_connect(struct connectdata *conn, bool *done)
   struct FILEPROTO *file = data->req.protop;
   int fd;
 #ifdef DOS_FILESYSTEM
-  int i;
+  size_t i;
   char *actual_path;
 #endif
-  int real_path_len;
+  size_t real_path_len;
 
-  real_path = curl_easy_unescape(data, data->state.path, 0, &real_path_len);
-  if(!real_path)
-    return CURLE_OUT_OF_MEMORY;
+  CURLcode result = Curl_urldecode(data, data->state.path, 0, &real_path,
+                                   &real_path_len, FALSE);
+  if(result)
+    return result;
 
 #ifdef DOS_FILESYSTEM
   /* If the first character is a slash, and there's
@@ -312,7 +313,7 @@ static CURLcode file_upload(struct connectdata *conn)
   curl_off_t bytecount = 0;
   struct timeval now = Curl_tvnow();
   struct_stat file_stat;
-  const char* buf2;
+  const char *buf2;
 
   /*
    * Since FILE: doesn't do the full init, we need to provide some extra
@@ -354,8 +355,7 @@ static CURLcode file_upload(struct connectdata *conn)
       failf(data, "Can't get the size of %s", file->path);
       return CURLE_WRITE_ERROR;
     }
-    else
-      data->state.resume_from = (curl_off_t)file_stat.st_size;
+    data->state.resume_from = (curl_off_t)file_stat.st_size;
   }
 
   while(!result) {
@@ -475,7 +475,7 @@ static CURLcode file_do(struct connectdata *conn, bool *done)
     time_t filetime;
     struct tm buffer;
     const struct tm *tm = &buffer;
-    snprintf(buf, sizeof(data->state.buffer),
+    snprintf(buf, CURL_BUFSIZE(data->set.buffer_size),
              "Content-Length: %" CURL_FORMAT_CURL_OFF_T "\r\n", expected_size);
     result = Curl_client_write(conn, CLIENTWRITE_BOTH, buf, 0);
     if(result)
@@ -518,8 +518,7 @@ static CURLcode file_do(struct connectdata *conn, bool *done)
       failf(data, "Can't get the size of file.");
       return CURLE_READ_ERROR;
     }
-    else
-      data->state.resume_from += (curl_off_t)statbuf.st_size;
+    data->state.resume_from += (curl_off_t)statbuf.st_size;
   }
 
   if(data->state.resume_from <= expected_size)

@@ -50,7 +50,6 @@
 #include <sys/param.h>
 #endif
 
-#include "strequal.h"
 #include "urldata.h"
 #include <curl/curl.h>
 #include "transfer.h"
@@ -144,28 +143,6 @@ static CURLcode win32_init(void)
   return CURLE_OK;
 }
 
-#ifdef USE_LIBIDN
-/*
- * Initialise use of IDNA library.
- * It falls back to ASCII if $CHARSET isn't defined. This doesn't work for
- * idna_to_ascii_lz().
- */
-static void idna_init (void)
-{
-#ifdef WIN32
-  char buf[60];
-  UINT cp = GetACP();
-
-  if(!getenv("CHARSET") && cp > 0) {
-    snprintf(buf, sizeof(buf), "CHARSET=cp%u", cp);
-    putenv(buf);
-  }
-#else
-  /* to do? */
-#endif
-}
-#endif  /* USE_LIBIDN */
-
 /* true globals -- for curl_global_init() and curl_global_cleanup() */
 static unsigned int  initialized;
 static long          init_flags;
@@ -217,7 +194,7 @@ curl_calloc_callback Curl_ccalloc;
 #endif
 
 /**
- * curl_global_init() globally initializes cURL given a bitwise set of the
+ * curl_global_init() globally initializes curl given a bitwise set of the
  * different features of what to initialize.
  */
 static CURLcode global_init(long flags, bool memoryfuncs)
@@ -262,10 +239,6 @@ static CURLcode global_init(long flags, bool memoryfuncs)
   }
 #endif
 
-#ifdef USE_LIBIDN
-  idna_init();
-#endif
-
   if(Curl_resolver_global_init()) {
     DEBUGF(fprintf(stderr, "Error: resolver_global_init failed\n"));
     return CURLE_FAILED_INIT;
@@ -292,7 +265,7 @@ static CURLcode global_init(long flags, bool memoryfuncs)
 
 
 /**
- * curl_global_init() globally initializes cURL given a bitwise set of the
+ * curl_global_init() globally initializes curl given a bitwise set of the
  * different features of what to initialize.
  */
 CURLcode curl_global_init(long flags)
@@ -301,7 +274,7 @@ CURLcode curl_global_init(long flags)
 }
 
 /*
- * curl_global_init_mem() globally initializes cURL and also registers the
+ * curl_global_init_mem() globally initializes curl and also registers the
  * user provided callback routines.
  */
 CURLcode curl_global_init_mem(long flags, curl_malloc_callback m,
@@ -333,7 +306,7 @@ CURLcode curl_global_init_mem(long flags, curl_malloc_callback m,
 }
 
 /**
- * curl_global_cleanup() globally cleanups cURL, uses the value of
+ * curl_global_cleanup() globally cleanups curl, uses the value of
  * "init_flags" to determine what needs to be cleaned up and what doesn't.
  */
 void curl_global_cleanup(void)
@@ -800,8 +773,7 @@ static CURLcode easy_perform(struct Curl_easy *data, bool events)
     curl_multi_cleanup(multi);
     if(mcode == CURLM_OUT_OF_MEMORY)
       return CURLE_OUT_OF_MEMORY;
-    else
-      return CURLE_FAILED_INIT;
+    return CURLE_FAILED_INIT;
   }
 
   sigpipe_ignore(data, &pipe_st);
@@ -897,6 +869,11 @@ struct Curl_easy *curl_easy_duphandle(struct Curl_easy *data)
    * get setup on-demand in the code, as that would probably decrease
    * the likeliness of us forgetting to init a buffer here in the future.
    */
+  outcurl->set.buffer_size = data->set.buffer_size;
+  outcurl->state.buffer = malloc(CURL_BUFSIZE(outcurl->set.buffer_size) + 1);
+  if(!outcurl->state.buffer)
+    goto fail;
+
   outcurl->state.headerbuff = malloc(HEADERSIZE);
   if(!outcurl->state.headerbuff)
     goto fail;
@@ -954,6 +931,8 @@ struct Curl_easy *curl_easy_duphandle(struct Curl_easy *data)
 
   Curl_convert_setup(outcurl);
 
+  Curl_initinfo(outcurl);
+
   outcurl->magic = CURLEASY_MAGIC_NUMBER;
 
   /* we reach this point and thus we are OK */
@@ -965,6 +944,7 @@ struct Curl_easy *curl_easy_duphandle(struct Curl_easy *data)
   if(outcurl) {
     curl_slist_free_all(outcurl->change.cookielist);
     outcurl->change.cookielist = NULL;
+    Curl_safefree(outcurl->state.buffer);
     Curl_safefree(outcurl->state.headerbuff);
     Curl_safefree(outcurl->change.url);
     Curl_safefree(outcurl->change.referer);
@@ -995,8 +975,15 @@ void curl_easy_reset(struct Curl_easy *data)
   /* zero out Progress data: */
   memset(&data->progress, 0, sizeof(struct Progress));
 
+  /* zero out PureInfo data: */
+  Curl_initinfo(data);
+
   data->progress.flags |= PGRS_HIDE;
   data->state.current_speed = -1; /* init to negative == impossible */
+
+  /* zero out authentication data: */
+  memset(&data->state.authhost, 0, sizeof(struct auth));
+  memset(&data->state.authproxy, 0, sizeof(struct auth));
 }
 
 /*
