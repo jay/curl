@@ -148,6 +148,20 @@ static unsigned long OpenSSL_version_num(void)
 #define OPENSSL_load_builtin_modules(x)
 #endif
 
+/*
+ * Whether SSL_CTX_set_keylog_callback is available.
+ * OpenSSL: supported since 1.1.1 https://github.com/openssl/openssl/pull/2287
+ * BoringSSL: supported since d28f59c27bac (committed 2015-11-19), the
+ *            BORINGSSL_201512 macro for 2016-01-21 should be close enough.
+ * LibreSSL: unsupported in at least 2.5.1 (explicitly check for it since it
+ *           lies and pretends to be OpenSSL 2.0.0).
+ */
+#if (OPENSSL_VERSION_NUMBER >= 0x10101000L && \
+     !defined(LIBRESSL_VERSION_NUMBER)) || \
+    defined(BORINGSSL_201512)
+#define HAVE_KEYLOG_CALLBACK
+#endif
+
 #if defined(LIBRESSL_VERSION_NUMBER)
 #define OSSL_PACKAGE "LibreSSL"
 #elif defined(OPENSSL_IS_BORINGSSL)
@@ -170,13 +184,38 @@ static int keylog_file_fd = -1;
 #define KEYLOG_PREFIX      "CLIENT_RANDOM "
 #define KEYLOG_PREFIX_LEN  (sizeof(KEYLOG_PREFIX) - 1)
 
-/* tap_ssl_key is called to make CLIENT_RANDOMs so that SSL can be decrypted */
+/*
+ * ossl_keylog_callback is called by OpenSSL *or* by libcurl with a
+ * CLIENT_RANDOM line to write to the opened SSLKEYLOGFILE.
+ */
+static void ossl_keylog_callback(const SSL *ssl, const char *line)
+{
+  (void)ssl;
+
+  if(keylog_file_fd < 0 || !line)
+    return;
+
+  /* Write all at once rather than using buffered I/O */
+  {
+#if defined(__GNUC__)
+    /* silence write() unused result warning */
+    int unused UNUSED_PARAM = (int)
+#endif
+      write(keylog_file_fd, line, strlen(line));
+  }
+}
+
+#ifndef HAVE_KEYLOG_CALLBACK
+/*
+ * tap_ssl_key is called by libcurl to make the CLIENT_RANDOMs if the OpenSSL
+ * being used doesn't have native support for doing that.
+ */
 static void tap_ssl_key(const SSL *ssl, ssl_tap_state_t *state)
 {
   const char *hex = "0123456789ABCDEF";
   int pos, i;
   char line[KEYLOG_PREFIX_LEN + 2 * SSL3_RANDOM_SIZE + 1 +
-            2 * SSL_MAX_MASTER_KEY_LENGTH + 1];
+            2 * SSL_MAX_MASTER_KEY_LENGTH + 1 + 1];
   const SSL_SESSION *session = SSL_get_session(ssl);
   unsigned char client_random[SSL3_RANDOM_SIZE];
   unsigned char master_key[SSL_MAX_MASTER_KEY_LENGTH];
@@ -228,17 +267,10 @@ static void tap_ssl_key(const SSL *ssl, ssl_tap_state_t *state)
     line[pos++] = hex[master_key[i] & 0xF];
   }
   line[pos++] = '\n';
-
-  /* Write at once rather than using buffered I/O. Perhaps there is concurrent
-   * write access so do not write hex values one by one. */
-  {
-#if defined(__GNUC__)
-    /* silence write() unused result warning */
-    int unused UNUSED_PARAM = (int)
-#endif
-      write(keylog_file_fd, line, pos);
-  }
+  line[pos] = '\0';
+  ossl_keylog_callback(ssl, line);
 }
+#endif /* !HAVE_KEYLOG_CALLBACK */
 
 static int passwd_callback(char *buf, int num, int encrypting,
                            void *global_passwd)
@@ -800,7 +832,7 @@ int Curl_ossl_init(void)
   OpenSSL_add_all_algorithms();
 #endif
 
-  keylog_file_name = getenv("SSLKEYLOGFILE");
+  keylog_file_name = curl_getenv("SSLKEYLOGFILE");
   if(keylog_file_name && keylog_file_fd < 0) {
     keylog_file_fd = open(keylog_file_name,
                           O_WRONLY | O_APPEND | O_CREAT, 0600);
@@ -2240,6 +2272,13 @@ static CURLcode ossl_connect_step1(struct connectdata *conn, int sockindex)
   SSL_CTX_set_verify(connssl->ctx,
                      verifypeer ? SSL_VERIFY_PEER : SSL_VERIFY_NONE, NULL);
 
+  /* Enable logging of secrets to the file specified in SSLKEYLOGFILE. */
+#ifdef HAVE_KEYLOG_CALLBACK
+  if(keylog_file) {
+    SSL_CTX_set_keylog_callback(connssl->ctx, ossl_keylog_callback);
+  }
+#endif
+
   /* give application a chance to interfere with SSL set up. */
   if(data->set.ssl.fsslctx) {
     result = (*data->set.ssl.fsslctx)(data, connssl->ctx,
@@ -2332,7 +2371,10 @@ static CURLcode ossl_connect_step2(struct connectdata *conn, int sockindex)
   ERR_clear_error();
 
   err = SSL_connect(connssl->handle);
+#ifndef HAVE_KEYLOG_CALLBACK
+  /* Log secrets to the file specified in SSLKEYLOGFILE. */
   tap_ssl_key(connssl->handle, &connssl->tap_state);
+#endif
 
   /* 1  is fine
      0  is "not successful but was shut down controlled"
