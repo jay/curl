@@ -160,64 +160,75 @@ static unsigned long OpenSSL_version_num(void)
  * Number of bytes to read from the random number seed file. This must be
  * a finite value (because some entropy "files" like /dev/urandom have
  * an infinite length), but must be large enough to provide enough
- * entopy to properly seed OpenSSL's PRNG.
+ * entropy to properly seed OpenSSL's PRNG.
  */
 #define RAND_LOAD_LENGTH 1024
 
-
-/**
- **
- ** BEGIN: SSLKEYLOGFILE implementation
- **
- ** This is code that will dump CLIENT_RANDOMs so that SSL can be decrypted.
- ** For this to work set environment variable SSLKEYLOGFILE to a filename.
- ** And in Wireshark: Edit > Preferences > Protocols > SSL > Master-Secret log
- **
- ** Origin https://git.lekensteyn.nl/peter/wireshark-notes/tree/src/sslkeylog.c
- ** Also see http://security.stackexchange.com/q/80158
- **
- * Dumps master keys for OpenSSL clients to file. The format is documented at
- * https://developer.mozilla.org/en-US/docs/Mozilla/Projects/NSS/Key_Log_Format
- *
- * Copyright (C) 2014 Peter Wu <peter@lekensteyn.nl>
- * Licensed under the terms of GPLv3 (or any later version) at your choice.
- **
- **/
-
-#define PREFIX      "CLIENT_RANDOM "
-#define PREFIX_LEN  (sizeof(PREFIX) - 1)
-
+/* The fd for the open SSLKEYLOGFILE, or negative otherwise */
 static int keylog_file_fd = -1;
 
-static void put_hex(char *buffer, int pos, char c)
-{
-  unsigned char c1 = ((unsigned char) c) >> 4;
-  unsigned char c2 = c & 0xF;
-  buffer[pos] = c1 < 10 ? '0' + c1 : 'A' + c1 - 10;
-  buffer[pos+1] = c2 < 10 ? '0' + c2 : 'A' + c2 - 10;
-}
+#define KEYLOG_PREFIX      "CLIENT_RANDOM "
+#define KEYLOG_PREFIX_LEN  (sizeof(KEYLOG_PREFIX) - 1)
 
-static void dump_to_fd(int fd, unsigned char *client_random,
-                       unsigned char *master_key, int master_key_length)
+/* tap_ssl_key is called to make CLIENT_RANDOMs so that SSL can be decrypted */
+static void tap_ssl_key(const SSL *ssl, ssl_tap_state_t *state)
 {
+  const char *hex = "0123456789ABCDEF";
   int pos, i;
-  char line[PREFIX_LEN + 2 * SSL3_RANDOM_SIZE + 1 +
+  char line[KEYLOG_PREFIX_LEN + 2 * SSL3_RANDOM_SIZE + 1 +
             2 * SSL_MAX_MASTER_KEY_LENGTH + 1];
+  const SSL_SESSION *session = SSL_get_session(ssl);
+  unsigned char client_random[SSL3_RANDOM_SIZE];
+  unsigned char master_key[SSL_MAX_MASTER_KEY_LENGTH];
+  int master_key_length = 0;
 
-  memcpy(line, PREFIX, PREFIX_LEN);
-  pos = PREFIX_LEN;
+  if(!session || keylog_file_fd < 0)
+    return;
+
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+  /* ssl->s3 is not checked in openssl 1.1.0-pre6, but let's assume that
+   * we have a valid SSL context if we have a non-NULL session. */
+  SSL_get_client_random(ssl, client_random, SSL3_RANDOM_SIZE);
+  master_key_length =
+    SSL_SESSION_get_master_key(session, master_key, SSL_MAX_MASTER_KEY_LENGTH);
+#else
+  if(ssl->s3 && session->master_key_length > 0) {
+    memcpy(client_random, ssl->s3->client_random, SSL3_RANDOM_SIZE);
+
+    master_key_length = session->master_key_length;
+    memcpy(master_key, session->master_key, master_key_length);
+  }
+#endif
+
+  if(master_key_length <= 0)
+    return;
+
+  /* Skip writing keys if there is no key or it did not change. */
+  if(state->master_key_length == master_key_length &&
+     memcmp(state->master_key, master_key, master_key_length) == 0) {
+    return;
+  }
+
+  memcpy(state->master_key, master_key, master_key_length);
+  state->master_key_length = master_key_length;
+
+  memcpy(line, KEYLOG_PREFIX, KEYLOG_PREFIX_LEN);
+  pos = KEYLOG_PREFIX_LEN;
+
   /* Client Random for SSLv3/TLS */
   for(i = 0; i < SSL3_RANDOM_SIZE; i++) {
-    put_hex(line, pos, client_random[i]);
-    pos += 2;
+    line[pos++] = hex[client_random[i] >> 4];
+    line[pos++] = hex[client_random[i] & 0xF];
   }
   line[pos++] = ' ';
+
   /* Master Secret (size is at most SSL_MAX_MASTER_KEY_LENGTH) */
   for(i = 0; i < master_key_length; i++) {
-    put_hex(line, pos, master_key[i]);
-    pos += 2;
+    line[pos++] = hex[master_key[i] >> 4];
+    line[pos++] = hex[master_key[i] & 0xF];
   }
   line[pos++] = '\n';
+
   /* Write at once rather than using buffered I/O. Perhaps there is concurrent
    * write access so do not write hex values one by one. */
   {
@@ -225,55 +236,9 @@ static void dump_to_fd(int fd, unsigned char *client_random,
     /* silence write() unused result warning */
     int unused UNUSED_PARAM = (int)
 #endif
-      write(fd, line, pos);
+      write(keylog_file_fd, line, pos);
   }
 }
-
-static void tap_ssl_key(const SSL *ssl, ssl_tap_state_t *state)
-{
-  const SSL_SESSION *session = SSL_get_session(ssl);
-  unsigned char client_random[SSL3_RANDOM_SIZE];
-  unsigned char master_key[SSL_MAX_MASTER_KEY_LENGTH];
-  int master_key_length = 0;
-
-  if(session && keylog_file_fd >= 0) {
-#if OPENSSL_VERSION_NUMBER >= 0x10100000L
-    /* ssl->s3 is not checked in openssl 1.1.0-pre6, but let's assume that
-     * we have a valid SSL context if we have a non-NULL session. */
-    SSL_get_client_random(ssl, client_random, SSL3_RANDOM_SIZE);
-    master_key_length = SSL_SESSION_get_master_key(session, master_key,
-      SSL_MAX_MASTER_KEY_LENGTH);
-#else
-    if(ssl->s3 && session->master_key_length > 0) {
-      memcpy(client_random, ssl->s3->client_random, SSL3_RANDOM_SIZE);
-
-      master_key_length = session->master_key_length;
-      memcpy(master_key, session->master_key, master_key_length);
-    }
-#endif
-  }
-
-  /* Write the logfile when the master key is available for SSLv3/TLSv1. */
-  if(master_key_length > 0) {
-    /* Skip writing keys if it did not change. */
-    if(state->master_key_length == master_key_length &&
-       memcmp(state->master_key, master_key, master_key_length) == 0) {
-      return;
-    }
-
-    memcpy(state->master_key, master_key, master_key_length);
-    state->master_key_length = master_key_length;
-
-    dump_to_fd(keylog_file_fd, client_random, master_key, master_key_length);
-  }
-}
-
-/**
- **
- ** END: SSLKEYLOGFILE implementation
- **
- **/
-
 
 static int passwd_callback(char *buf, int num, int encrypting,
                            void *global_passwd)
