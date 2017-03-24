@@ -185,24 +185,46 @@ static int keylog_file_fd = -1;
 #define KEYLOG_PREFIX_LEN  (sizeof(KEYLOG_PREFIX) - 1)
 
 /*
- * ossl_keylog_callback is called by OpenSSL *or* by libcurl with a
- * CLIENT_RANDOM line to write to the opened SSLKEYLOGFILE.
+ * ossl_keylog_callback is called by OpenSSL (or derivative) or by libcurl
+ * with a secrets line (eg CLIENT_RANDOM) to write to the opened SSLKEYLOGFILE.
  */
 static void ossl_keylog_callback(const SSL *ssl, const char *line)
 {
+  char *buf = NULL;
+  size_t buflen = 0;
+  size_t linelen;
+
   (void)ssl;
 
   if(keylog_file_fd < 0 || !line)
     return;
 
-  /* Write all at once rather than using buffered I/O */
+  linelen = strlen(line);
+  if(!linelen || (linelen == 1 && *line == '\n'))
+    return;
+
+  /* If the line does not end in LF make a copy of it and append the LF.
+     Depending on the caller the line we are given may not end in LF.
+     Since we need the atomicity of writing in a single call we append it. */
+  if(line[linelen - 1] != '\n') {
+    buflen = linelen + 1;
+    buf = malloc(buflen + 1);
+    if(!buf)
+      return;
+    strncpy(buf, line, linelen);
+    buf[buflen - 1] = '\n';
+    buf[buflen] = '\0';
+  }
+
   {
 #if defined(__GNUC__)
     /* silence write() unused result warning */
     int unused UNUSED_PARAM = (int)
 #endif
-      write(keylog_file_fd, line, strlen(line));
+      write(keylog_file_fd, (buf ? buf : line), (buf ? buflen : linelen));
   }
+
+  free(buf);
 }
 
 #ifndef HAVE_KEYLOG_CALLBACK
@@ -268,6 +290,7 @@ static void tap_ssl_key(const SSL *ssl, ssl_tap_state_t *state)
   }
   line[pos++] = '\n';
   line[pos] = '\0';
+
   ossl_keylog_callback(ssl, line);
 }
 #endif /* !HAVE_KEYLOG_CALLBACK */
