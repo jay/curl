@@ -178,56 +178,19 @@ static unsigned long OpenSSL_version_num(void)
  */
 #define RAND_LOAD_LENGTH 1024
 
-/* The fd for the open SSLKEYLOGFILE, or negative otherwise */
-static int keylog_file_fd = -1;
+/* The fp for the open SSLKEYLOGFILE, or NULL if not open */
+static FILE *keylog_file_fp = NULL;
 
-#define KEYLOG_PREFIX      "CLIENT_RANDOM "
-#define KEYLOG_PREFIX_LEN  (sizeof(KEYLOG_PREFIX) - 1)
-
-/*
- * ossl_keylog_callback is called by OpenSSL (or derivative) or by libcurl
- * with a secrets line (eg CLIENT_RANDOM) to write to the opened SSLKEYLOGFILE.
- */
+#ifdef HAVE_KEYLOG_CALLBACK
 static void ossl_keylog_callback(const SSL *ssl, const char *line)
 {
-  char *buf = NULL;
-  size_t buflen = 0;
-  size_t linelen;
-
   (void)ssl;
-
-  if(keylog_file_fd < 0 || !line)
-    return;
-
-  linelen = strlen(line);
-  if(!linelen || (linelen == 1 && *line == '\n'))
-    return;
-
-  /* If the line does not end in LF make a copy of it and append the LF.
-     Depending on the caller the line we are given may not end in LF.
-     Since we need the atomicity of writing in a single call we append it. */
-  if(line[linelen - 1] != '\n') {
-    buflen = linelen + 1;
-    buf = malloc(buflen + 1);
-    if(!buf)
-      return;
-    strncpy(buf, line, linelen);
-    buf[buflen - 1] = '\n';
-    buf[buflen] = '\0';
-  }
-
-  {
-#if defined(__GNUC__)
-    /* silence write() unused result warning */
-    int unused UNUSED_PARAM = (int)
-#endif
-      write(keylog_file_fd, (buf ? buf : line), (buf ? buflen : linelen));
-  }
-
-  free(buf);
+  if(keylog_file_fp && line && *line)
+    fprintf(keylog_file_fp, "%s\n", line);
 }
-
-#ifndef HAVE_KEYLOG_CALLBACK
+#else
+#define KEYLOG_PREFIX      "CLIENT_RANDOM "
+#define KEYLOG_PREFIX_LEN  (sizeof(KEYLOG_PREFIX) - 1)
 /*
  * tap_ssl_key is called by libcurl to make the CLIENT_RANDOMs if the OpenSSL
  * being used doesn't have native support for doing that.
@@ -243,7 +206,7 @@ static void tap_ssl_key(const SSL *ssl, ssl_tap_state_t *state)
   unsigned char master_key[SSL_MAX_MASTER_KEY_LENGTH];
   int master_key_length = 0;
 
-  if(!session || keylog_file_fd < 0)
+  if(!session || !keylog_file_fp)
     return;
 
 #if OPENSSL_VERSION_NUMBER >= 0x10100000L
@@ -293,7 +256,7 @@ static void tap_ssl_key(const SSL *ssl, ssl_tap_state_t *state)
   line[pos++] = '\n';
   line[pos] = '\0';
 
-  ossl_keylog_callback(ssl, line);
+  fprintf(keylog_file_fp, "%s", line);
 }
 #endif /* !HAVE_KEYLOG_CALLBACK */
 
@@ -878,9 +841,14 @@ int Curl_ossl_init(void)
 #endif
 
   keylog_file_name = curl_getenv("SSLKEYLOGFILE");
-  if(keylog_file_name && keylog_file_fd < 0) {
-    keylog_file_fd = open(keylog_file_name,
-                          O_WRONLY | O_APPEND | O_CREAT, 0600);
+  if(keylog_file_name && !keylog_file_fp) {
+    keylog_file_fp = fopen(keylog_file_name, FOPEN_APPENDTEXT);
+    if(keylog_file_fp) {
+      if(setvbuf(keylog_file_fp, NULL, _IOLBF, 4096)) {
+        fclose(keylog_file_fp);
+        keylog_file_fp = NULL;
+      }
+    }
   }
 
   return 1;
@@ -920,9 +888,9 @@ void Curl_ossl_cleanup(void)
 #endif
 #endif
 
-  if(keylog_file_fd >= 0) {
-    close(keylog_file_fd);
-    keylog_file_fd = -1;
+  if(keylog_file_fp) {
+    fclose(keylog_file_fp);
+    keylog_file_fp = NULL;
   }
 }
 
