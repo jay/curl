@@ -266,12 +266,14 @@ static void tap_ssl_key(const SSL *ssl, ssl_tap_state_t *state)
 
   /* Skip writing keys if there is no key or it did not change. */
   if(state->master_key_length == master_key_length &&
-     memcmp(state->master_key, master_key, master_key_length) == 0) {
+     !memcmp(state->master_key, master_key, master_key_length) &&
+     !memcmp(state->client_random, client_random, SSL3_RANDOM_SIZE)) {
     return;
   }
 
-  memcpy(state->master_key, master_key, master_key_length);
   state->master_key_length = master_key_length;
+  memcpy(state->master_key, master_key, master_key_length);
+  memcpy(state->client_random, client_random, SSL3_RANDOM_SIZE);
 
   memcpy(line, KEYLOG_PREFIX, KEYLOG_PREFIX_LEN);
   pos = KEYLOG_PREFIX_LEN;

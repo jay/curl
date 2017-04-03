@@ -258,6 +258,7 @@ struct curl_schannel_ctxt {
 typedef struct ssl_tap_state {
   int master_key_length;
   unsigned char master_key[SSL_MAX_MASTER_KEY_LENGTH];
+  unsigned char client_random[SSL3_RANDOM_SIZE];
 } ssl_tap_state_t;
 #endif
 
