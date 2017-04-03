@@ -34,10 +34,6 @@
 
 #ifdef USE_OPENSSL
 
-#ifdef HAVE_FCNTL_H
-#include <fcntl.h>
-#endif
-
 #ifdef HAVE_LIMITS_H
 #include <limits.h>
 #endif
@@ -217,10 +213,9 @@ static void tap_ssl_key(const SSL *ssl, ssl_tap_state_t *state)
     SSL_SESSION_get_master_key(session, master_key, SSL_MAX_MASTER_KEY_LENGTH);
 #else
   if(ssl->s3 && session->master_key_length > 0) {
-    memcpy(client_random, ssl->s3->client_random, SSL3_RANDOM_SIZE);
-
     master_key_length = session->master_key_length;
-    memcpy(master_key, session->master_key, master_key_length);
+    memcpy(master_key, session->master_key, session->master_key_length);
+    memcpy(client_random, ssl->s3->client_random, SSL3_RANDOM_SIZE);
   }
 #endif
 
