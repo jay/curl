@@ -327,6 +327,9 @@ static curl_version_info_data version_info = {
 #if defined(HTTPS_PROXY_SUPPORT)
   | CURL_VERSION_HTTPS_PROXY
 #endif
+#if !defined(CURL_DISABLE_SHA256)
+  | CURL_VERSION_SHA256
+#endif
   ,
   NULL, /* ssl_version */
   0,    /* ssl_version_num, this is kept at zero */

@@ -183,6 +183,7 @@
 #include "smb.h"
 #include "wildcard.h"
 #include "multihandle.h"
+#include "sha256.h"
 
 #ifdef HAVE_GSSAPI
 # ifdef HAVE_GSSGNU
@@ -754,6 +755,10 @@ struct SingleRequest {
 
   void *protop;       /* Allocated protocol-specific data. Each protocol
                          handler makes sure this points to data it needs. */
+#ifndef CURL_DISABLE_SHA256
+  sha256_context sha256_ctx;   /* Holds the context for calculating the SHA256
+                                  hash of the received written content body */
+#endif
 };
 
 /*
@@ -1189,6 +1194,8 @@ struct PureInfo {
   struct curl_certinfo certs; /* info about the certs, only populated in
                                  OpenSSL builds. Asked for with
                                  CURLOPT_CERTINFO / CURLINFO_CERTINFO */
+
+  char sha256[64 + 1];   /* hash of the received written content body */
 };
 
 
@@ -1776,6 +1783,8 @@ struct UserDefined {
   struct Curl_http2_dep *stream_dependents;
 
   bool abstract_unix_socket;
+  bool calculate_sha256;    /* calculate the SHA256 hash of the received
+                               written content body */
 };
 
 struct Names {

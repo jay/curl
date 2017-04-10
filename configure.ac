@@ -168,6 +168,7 @@ curl_verbose_msg="enabled (--disable-verbose)"
    curl_rtmp_msg="no      (--with-librtmp)"
   curl_mtlnk_msg="no      (--with-libmetalink)"
     curl_psl_msg="no      (--with-libpsl)"
+ curl_sha256_msg="no      (--enable-sha256)"
 
     init_ssl_msg=${curl_ssl_msg}
 
@@ -3644,6 +3645,27 @@ AC_HELP_STRING([--disable-cookies],[Disable cookies support]),
 )
 
 dnl ************************************************************
+dnl disable SHA256 support
+dnl
+AC_MSG_CHECKING([whether to enable SHA256 support])
+AC_ARG_ENABLE(sha256,
+AC_HELP_STRING([--enable-sha256],[Enable SHA256 support])
+AC_HELP_STRING([--disable-sha256],[Disable SHA256 support]),
+[ case "$enableval" in
+  no)
+       AC_MSG_RESULT(no)
+       AC_DEFINE(CURL_DISABLE_SHA256, 1, [to disable SHA256 support])
+       curl_sha256_msg="disabled"
+       ;;
+  *)   AC_MSG_RESULT(yes)
+       curl_sha256_msg="enabled"
+       ;;
+  esac ], [
+       AC_MSG_RESULT(yes)
+       curl_sha256_msg="enabled"
+])
+
+dnl ************************************************************
 dnl hiding of library internal symbols
 dnl
 CURL_CONFIGURE_SYMBOL_HIDING
@@ -3948,6 +3970,7 @@ AC_MSG_NOTICE([Configured to build curl/libcurl:
   metalink support: ${curl_mtlnk_msg}
   PSL support:      ${curl_psl_msg}
   HTTP2 support:    ${curl_h2_msg}
+  SHA256 support:   ${curl_sha256_msg}
   Protocols:        ${SUPPORT_PROTOCOLS}
 ])
 

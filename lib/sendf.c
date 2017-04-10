@@ -34,6 +34,7 @@
 #include "strerror.h"
 #include "select.h"
 #include "strdup.h"
+#include "sha256.h"
 
 /* The last 3 #include files should be in this order */
 #include "curl_printf.h"
@@ -584,6 +585,15 @@ CURLcode Curl_client_chop_write(struct connectdata *conn,
         }
         return pausewrite(data, type, ptr, len);
       }
+
+#ifndef CURL_DISABLE_SHA256
+      if(data->set.calculate_sha256 && wrote <= chunklen &&
+         (type & CLIENTWRITE_BODY) && !(type & CLIENTWRITE_HEADER)) {
+        sha256_hash(&data->req.sha256_ctx, (unsigned char *)ptr,
+                    (unsigned int)wrote);
+      }
+#endif /* !CURL_DISABLE_SHA256 */
+
       if(wrote != chunklen) {
         failf(data, "Failed writing body (%zu != %zu)", wrote, chunklen);
         return CURLE_WRITE_ERROR;

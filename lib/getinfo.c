@@ -85,6 +85,8 @@ CURLcode Curl_initinfo(struct Curl_easy *data)
   Curl_ssl_free_certinfo(data);
 #endif
 
+  info->sha256[0] = '\0';
+
   return CURLE_OK;
 }
 
@@ -128,6 +130,11 @@ static CURLcode getinfo_char(struct Curl_easy *data, CURLINFO info,
     break;
   case CURLINFO_SCHEME:
     *param_charp = data->info.conn_scheme;
+    break;
+  case CURLINFO_SHA256:
+    *param_charp = (data->info.sha256 && *data->info.sha256) ?
+      data->info.sha256 :
+      "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
     break;
 
   default:

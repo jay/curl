@@ -1496,6 +1496,33 @@ static CURLcode operate_do(struct GlobalConfig *global,
         if(config->tftp_no_options)
           my_setopt(curl, CURLOPT_TFTP_NO_OPTIONS, 1L);
 
+        /* if %{sha256} is in write-out then enable SHA256 calculation */
+        if(config->writeout) {
+          const char *p = config->writeout;
+          for(;;) {
+            p = strstr(p, "%{");
+            if(!p)
+              break;
+            p += 2;
+            if(!curl_strnequal(p, "sha256", 6))
+              continue;
+            p += 6;
+            if(*p != '}')
+              continue;
+            if(!(curlinfo->features & CURL_VERSION_SHA256)) {
+              result = CURLE_NOT_BUILT_IN;
+              if(global->showerror) {
+                fprintf(global->errors,
+                  "curl: (%d) --write-out %%{sha256} support not built in\n",
+                  result);
+              }
+              goto quit_urls;
+            }
+            my_setopt(curl, CURLOPT_SHA256, 1L);
+            break;
+          }
+        }
+
         /* initialize retry vars for loop below */
         retry_sleep_default = (config->retry_delay) ?
           config->retry_delay*1000L : RETRY_SLEEP_DEFAULT; /* ms */

@@ -193,6 +193,8 @@ if(ENABLE_IPV6 AND NOT WIN32)
         CACHE BOOL "Define if you want to enable IPv6 support" FORCE)
   endif()
 endif()
+option(CURL_DISABLE_SHA256 "to disable SHA256 support" OFF)
+mark_as_advanced(CURL_DISABLE_SHA256)
 
 option(ENABLE_MANUAL "to provide the built-in manual" ON)
 unset(USE_MANUAL CACHE) # TODO: cache NROFF/NROFF_MANOPT/USE_MANUAL vars?
@@ -1137,6 +1139,7 @@ endif()
 _add_if("TLS-SRP"       USE_TLS_SRP)
 # TODO option --with-nghttp2 tests for nghttp2 lib and nghttp2/nghttp2.h header
 _add_if("HTTP2"         USE_NGHTTP2)
+_add_if("SHA256"        NOT CURL_DISABLE_SHA256)
 string(REPLACE ";" " " SUPPORT_FEATURES "${_items}")
 message(STATUS "Enabled features: ${SUPPORT_FEATURES}")
 

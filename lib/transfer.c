@@ -73,6 +73,7 @@
 #include "connect.h"
 #include "non-ascii.h"
 #include "http2.h"
+#include "sha256.h"
 
 /* The last 3 #include files should be in this order */
 #include "curl_printf.h"
@@ -1380,6 +1381,25 @@ CURLcode Curl_posttransfer(struct Curl_easy *data)
   (void)data; /* unused parameter */
 #endif
 
+#ifndef CURL_DISABLE_SHA256
+  /* If we're calculating the sha256 then finalize the hash. Since we don't
+     know how many times this function may be called we never truly finalize,
+     instead we finalize a temp copy of the context. */
+  if(data->set.calculate_sha256) {
+    int i, pos;
+    unsigned char hv[32];
+    const char *hex = "0123456789abcdef";
+    sha256_context ctx = data->req.sha256_ctx;
+
+    sha256_done(&ctx, hv);
+    for(pos = 0, i = 0; i < 32; ++i) {
+      data->info.sha256[pos++] = hex[hv[i] >> 4];
+      data->info.sha256[pos++] = hex[hv[i] & 0xF];
+    }
+    data->info.sha256[pos] = '\0';
+  }
+#endif /* !CURL_DISABLE_SHA256 */
+
   return CURLE_OK;
 }
 
@@ -1911,6 +1931,12 @@ Curl_setup_transfer(
   k->size = size;
   k->bytecountp = bytecountp;
   k->writebytecountp = writecountp;
+
+#ifndef CURL_DISABLE_SHA256
+  if(data->set.calculate_sha256) {
+    sha256_init(&k->sha256_ctx);
+  }
+#endif /* !CURL_DISABLE_SHA256 */
 
   /* The code sequence below is placed in this function just because all
      necessary input is not always known in do_complete() as this function may

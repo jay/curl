@@ -1,0 +1,72 @@
+.\" **************************************************************************
+.\" *                                  _   _ ____  _
+.\" *  Project                     ___| | | |  _ \| |
+.\" *                             / __| | | | |_) | |
+.\" *                            | (__| |_| |  _ <| |___
+.\" *                             \___|\___/|_| \_\_____|
+.\" *
+.\" * Copyright (C) 1998 - 2017, Daniel Stenberg, <daniel@haxx.se>, et al.
+.\" *
+.\" * This software is licensed as described in the file COPYING, which
+.\" * you should have received as part of this distribution. The terms
+.\" * are also available at https://curl.haxx.se/docs/copyright.html.
+.\" *
+.\" * You may opt to use, copy, modify, merge, publish, distribute and/or sell
+.\" * copies of the Software, and permit persons to whom the Software is
+.\" * furnished to do so, under the terms of the COPYING file.
+.\" *
+.\" * This software is distributed on an "AS IS" basis, WITHOUT WARRANTY OF ANY
+.\" * KIND, either express or implied.
+.\" *
+.\" **************************************************************************
+.\"
+.TH CURLINFO_SHA256 3 "8 April 2017" "libcurl 7.55.0" "curl_easy_getinfo options"
+.SH NAME
+CURLINFO_SHA256 \- get the SHA256 hash of the received written content body
+.SH SYNOPSIS
+#include <curl/curl.h>
+
+CURLcode curl_easy_getinfo(CURL *handle, CURLINFO_SHA256, const char **hash);
+.SH DESCRIPTION
+Pass a pointer to a char pointer to receive the pointer to a zero-terminated
+SHA256 hash string of the received written content body of the most recent
+transfer done with this \fBcurl\fP handle.
+
+If CURLE_OK is returned the \fBhash\fP pointer is guaranteed to point to a
+pointer to the SHA256 hash string. You MUST NOT free the pointed to memory, it
+is cleaned up by \fIcurl_easy_cleanup(3)\fP. If there was no received
+written content body then the SHA256 hash of no content is pointed to,
+e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855.
+
+Note the content body written by libcurl may be different than the content body
+received from the network transfer if any conversions were applied. For example
+libcurl may do line ending conversion for text files retrieved via FTP.
+
+Note that you must tell libcurl to calculate the hash, before the transfer is
+made, by using the \fICURLOPT_SHA256(3)\fP option to \fIcurl_easy_setopt(3)\fP
+or you will unconditionally get the sha256 hash of no content.
+.SH PROTOCOLS
+Only tested with HTTP, HTTPS
+.SH EXAMPLE
+.nf
+CURL *curl = curl_easy_init();
+if(curl) {
+  CURLcode res;
+  curl_easy_setopt(curl, CURLOPT_URL, "http://example.com");
+  curl_easy_setopt(curl, CURLOPT_SHA256, 1L);
+  res = curl_easy_perform(curl);
+  if(res == CURLE_OK) {
+    const char *hash;
+    curl_easy_getinfo(curl, CURLINFO_SHA256, &hash);
+  }
+  curl_easy_cleanup(curl);
+}
+.fi
+.SH AVAILABILITY
+Added in 7.55.0
+.SH RETURN VALUE
+CURLE_OK if supported;
+or an error such as CURLE_NOT_BUILT_IN or CURLE_UNKNOWN_OPTION.
+.SH "SEE ALSO"
+.BR CURLOPT_SHA256 "(3), "
+.BR curl_easy_getinfo "(3), " curl_easy_setopt "(3), "

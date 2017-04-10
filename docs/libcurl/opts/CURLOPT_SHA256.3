@@ -1,0 +1,50 @@
+.\" **************************************************************************
+.\" *                                  _   _ ____  _
+.\" *  Project                     ___| | | |  _ \| |
+.\" *                             / __| | | | |_) | |
+.\" *                            | (__| |_| |  _ <| |___
+.\" *                             \___|\___/|_| \_\_____|
+.\" *
+.\" * Copyright (C) 1998 - 2017, Daniel Stenberg, <daniel@haxx.se>, et al.
+.\" *
+.\" * This software is licensed as described in the file COPYING, which
+.\" * you should have received as part of this distribution. The terms
+.\" * are also available at https://curl.haxx.se/docs/copyright.html.
+.\" *
+.\" * You may opt to use, copy, modify, merge, publish, distribute and/or sell
+.\" * copies of the Software, and permit persons to whom the Software is
+.\" * furnished to do so, under the terms of the COPYING file.
+.\" *
+.\" * This software is distributed on an "AS IS" basis, WITHOUT WARRANTY OF ANY
+.\" * KIND, either express or implied.
+.\" *
+.\" **************************************************************************
+.\"
+.TH CURLOPT_SHA256 3 "8 April 2017" "libcurl 7.55.0" "curl_easy_setopt options"
+.SH NAME
+CURLOPT_SHA256 \- calculate the SHA256 hash of the received written content body
+.SH SYNOPSIS
+#include <curl/curl.h>
+
+CURLcode curl_easy_setopt(CURL *handle, CURLOPT_SHA256, long onoff);
+.SH DESCRIPTION
+If \fBonoff\fP is 1 then libcurl will calculate the SHA256 hash of the received
+written content body of the transfer. Only the hash from the most recent
+transfer will be saved. The \fIcurl_easy_getinfo(3)\fP function with the
+\fICURLINFO_SHA256(3)\fP argument can be used after a transfer to extract the
+written content body of the most recent transfer.
+Refer to \fICURLINFO_SHA256(3)\fP for more information.
+.SH DEFAULT
+0
+.SH PROTOCOLS
+Only tested with HTTP, HTTPS
+.SH EXAMPLE
+Refer to \fICURLINFO_SHA256(3)\fP for an example.
+.SH AVAILABILITY
+Added in 7.55.0
+.SH RETURN VALUE
+CURLE_OK if supported;
+or an error such as CURLE_NOT_BUILT_IN or CURLE_UNKNOWN_OPTION.
+.SH "SEE ALSO"
+.BR CURLINFO_SHA256 "(3), "
+.BR curl_easy_setopt "(3), " curl_easy_getinfo "(3), "

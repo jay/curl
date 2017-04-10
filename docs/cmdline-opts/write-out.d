@@ -78,6 +78,10 @@ The remote port number of the most recently done connection (Added in 7.29.0)
 .B scheme
 The URL scheme (sometimes called protocol) that was effectively used (Added in 7.52.0)
 .TP
+.B sha256
+The SHA256 hash string of the received written content body of the most recent
+transfer of the URL (Added in 7.55.0)
+.TP
 .B size_download
 The total amount of bytes that were downloaded.
 .TP

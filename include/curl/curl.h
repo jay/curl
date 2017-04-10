@@ -1782,6 +1782,9 @@ typedef enum {
   /* Suppress proxy CONNECT response headers from user callbacks */
   CINIT(SUPPRESS_CONNECT_HEADERS, LONG, 265),
 
+  /* Calculate the SHA256 hash of the received written content body */
+  CINIT(SHA256, LONG, 266),
+
   CURLOPT_LASTENTRY /* the last unused */
 } CURLoption;
 
@@ -2306,9 +2309,10 @@ typedef enum {
   CURLINFO_PROXY_SSL_VERIFYRESULT = CURLINFO_LONG + 47,
   CURLINFO_PROTOCOL         = CURLINFO_LONG   + 48,
   CURLINFO_SCHEME           = CURLINFO_STRING + 49,
+  CURLINFO_SHA256           = CURLINFO_STRING + 50,
   /* Fill in new entries below here! */
 
-  CURLINFO_LASTONE          = 49
+  CURLINFO_LASTONE          = 50
 } CURLINFO;
 
 /* CURLINFO_RESPONSE_CODE is the new name for the option previously known as
@@ -2470,6 +2474,7 @@ typedef struct {
 #define CURL_VERSION_PSL          (1<<20) /* Mozilla's Public Suffix List, used
                                              for cookie domain verification */
 #define CURL_VERSION_HTTPS_PROXY  (1<<21) /* HTTPS-proxy support built-in */
+#define CURL_VERSION_SHA256       (1<<22) /* SHA256 support built-in */
 
  /*
  * NAME curl_version_info()

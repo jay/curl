@@ -40,6 +40,7 @@ man_MANS =                                      \
   CURLINFO_RTSP_SERVER_CSEQ.3                   \
   CURLINFO_RTSP_SESSION_ID.3                    \
   CURLINFO_SCHEME.3                             \
+  CURLINFO_SHA256.3                             \
   CURLINFO_SIZE_DOWNLOAD.3                      \
   CURLINFO_SIZE_UPLOAD.3                        \
   CURLINFO_SPEED_DOWNLOAD.3                     \
@@ -244,6 +245,7 @@ man_MANS =                                      \
   CURLOPT_SEEKDATA.3                            \
   CURLOPT_SEEKFUNCTION.3                        \
   CURLOPT_SERVICE_NAME.3                        \
+  CURLOPT_SHA256.3                              \
   CURLOPT_SHARE.3                               \
   CURLOPT_SOCKOPTDATA.3                         \
   CURLOPT_SOCKOPTFUNCTION.3                     \
