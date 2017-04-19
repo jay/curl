@@ -5,7 +5,7 @@
  *                            | (__| |_| |  _ <| |___
  *                             \___|\___/|_| \_\_____|
  *
- * Copyright (C) 1998 - 2016, Daniel Stenberg, <daniel@haxx.se>, et al.
+ * Copyright (C) 1998 - 2017, Daniel Stenberg, <daniel@haxx.se>, et al.
  *
  * This software is licensed as described in the file COPYING, which
  * you should have received as part of this distribution. The terms
@@ -1369,7 +1369,7 @@ CURLcode Curl_http_connect(struct connectdata *conn, bool *done)
     /* nothing else to do except wait right now - we're not done here. */
     return CURLE_OK;
 
-  if(conn->given->flags & PROTOPT_SSL) {
+  if(conn->given->protocol & CURLPROTO_HTTPS) {
     /* perform SSL initialization */
     result = https_connecting(conn, done);
     if(result)
@@ -2312,20 +2312,10 @@ CURLcode Curl_http(struct connectdata *conn, bool *done)
                      te
       );
 
-  /* clear userpwd to avoid re-using credentials from re-used connections */
+  /* clear userpwd and proxyuserpwd to avoid re-using old credentials
+   * from re-used connections */
   Curl_safefree(conn->allocptr.userpwd);
-
-  /*
-   * Free proxyuserpwd for Negotiate/NTLM. Cannot reuse as it is associated
-   * with the connection and shouldn't be repeated over it either.
-   */
-  switch(data->state.authproxy.picked) {
-  case CURLAUTH_NEGOTIATE:
-  case CURLAUTH_NTLM:
-  case CURLAUTH_NTLM_WB:
-    Curl_safefree(conn->allocptr.proxyuserpwd);
-    break;
-  }
+  Curl_safefree(conn->allocptr.proxyuserpwd);
 
   if(result)
     return result;
@@ -3313,7 +3303,7 @@ CURLcode Curl_http_readwrite_headers(struct Curl_easy *data,
         /*
          * https://tools.ietf.org/html/rfc7230#section-3.1.2
          *
-         * The reponse code is always a three-digit number in HTTP as the spec
+         * The response code is always a three-digit number in HTTP as the spec
          * says. We try to allow any number here, but we cannot make
          * guarantees on future behaviors since it isn't within the protocol.
          */

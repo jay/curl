@@ -29,8 +29,8 @@ CMAKE_DIST = CMakeLists.txt CMake/CMakeConfigurableFile.in      \
  CMake/Platforms/WindowsCache.cmake CMake/Utilities.cmake       \
  include/curl/curlbuild.h.cmake CMake/Macros.cmake              \
  CMake/CurlSymbolHiding.cmake CMake/FindCARES.cmake             \
- CMake/FindLibSSH2.cmake CMake/FindNGHTTP2.cmake
-
+ CMake/FindLibSSH2.cmake CMake/FindNGHTTP2.cmake                \
+ CMake/FindMbedTLS.cmake
 
 VC6_LIBTMPL = projects/Windows/VC6/lib/libcurl.tmpl
 VC6_LIBDSP = projects/Windows/VC6/lib/libcurl.dsp.dist
@@ -133,7 +133,10 @@ VC_DIST = projects/README                           \
  projects/Windows/VC14/lib/libcurl.sln              \
  projects/Windows/VC14/lib/libcurl.vcxproj.filters  \
  projects/Windows/VC14/src/curl.sln                 \
- projects/Windows/VC14/src/curl.vcxproj.filters
+ projects/Windows/VC14/src/curl.vcxproj.filters     \
+ projects/generate.bat                              \
+ projects/wolfssl_options.h                         \
+ projects/wolfssl_override.props
 
 WINBUILD_DIST = winbuild/BUILD.WINDOWS.txt winbuild/gen_resp_file.bat	\
  winbuild/MakefileBuild.vc winbuild/Makefile.vc
@@ -171,10 +174,10 @@ dist-hook:
 	done)
 
 html:
-	cd docs && make html
+	cd docs && $(MAKE) html
 
 pdf:
-	cd docs && make pdf
+	cd docs && $(MAKE) pdf
 
 check: test examples check-docs
 
@@ -253,10 +256,10 @@ rpm:
 # pkgadd -d ./HAXXcurl-*
 #
 
-# gak - libtool requires an absoulte directory, hence the pwd below...
+# gak - libtool requires an absolute directory, hence the pwd below...
 pkgadd:
 	umask 022 ; \
-	make install DESTDIR=`/bin/pwd`/packages/Solaris/root ; \
+	$(MAKE) install DESTDIR=`/bin/pwd`/packages/Solaris/root ; \
 	cat COPYING > $(srcdir)/packages/Solaris/copyright ; \
 	cd $(srcdir)/packages/Solaris && $(MAKE) package
 

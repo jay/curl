@@ -375,7 +375,7 @@ polarssl_connect_step1(struct connectdata *conn,
   ssl_set_ciphersuites(&connssl->ssl, ssl_list_ciphersuites());
 
   /* Check if there's a cached ID we can/should use here! */
-  if(data->set.general_ssl.sessionid) {
+  if(SSL_SET_OPTION(primary.sessionid)) {
     void *old_session = NULL;
 
     Curl_ssl_sessionid_lock(conn);
@@ -603,7 +603,7 @@ polarssl_connect_step3(struct connectdata *conn,
 
   DEBUGASSERT(ssl_connect_3 == connssl->connecting_state);
 
-  if(data->set.general_ssl.sessionid) {
+  if(SSL_SET_OPTION(primary.sessionid)) {
     int ret;
     ssl_session *our_ssl_sessionid;
     void *old_ssl_sessionid = NULL;
@@ -612,7 +612,7 @@ polarssl_connect_step3(struct connectdata *conn,
     if(!our_ssl_sessionid)
       return CURLE_OUT_OF_MEMORY;
 
-    ssl_session_init(our_ssl_sessionid);
+    memset(our_ssl_sessionid, 0, sizeof(ssl_session));
 
     ret = ssl_get_session(&connssl->ssl, our_ssl_sessionid);
     if(ret) {
