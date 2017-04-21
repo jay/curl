@@ -149,6 +149,43 @@ const struct Curl_handler Curl_handler_https = {
 };
 #endif
 
+
+static void dump(const char *text, unsigned char *ptr, size_t size)
+{
+  size_t i;
+  size_t c;
+  unsigned int width=0x10;
+
+  fprintf(stderr, "\n\n****************http****************\n");
+  fprintf(stderr, "ptr: %p\n", ptr);
+  fprintf(stderr, "size: %zu\n", size);
+
+  fprintf(stderr, "%s, %10.10ld bytes (0x%8.8lx)\n",
+          text, (long)size, (long)size);
+
+  for(i=0; i<size; i+= width) {
+    fprintf(stderr, "%4.4lx: ", (long)i);
+
+    /* show hex to the left */
+    for(c = 0; c < width; c++) {
+      if(i+c < size)
+        fprintf(stderr, "%02x ", ptr[i+c]);
+      else
+        fputs("   ", stderr);
+    }
+
+    /* show data on the right */
+    for(c = 0; (c < width) && (i+c < size); c++) {
+      char x = (ptr[i+c] >= 0x20 && ptr[i+c] < 0x80) ? ptr[i+c] : '.';
+      fputc(x, stderr);
+    }
+
+    fputc('\n', stderr); /* newline */
+  }
+  fprintf(stderr, "************************************\n\n");
+}
+
+
 CURLcode Curl_http_setup_conn(struct connectdata *conn)
 {
   /* allocate the HTTP-specific struct for the Curl_easy, only to survive
@@ -2690,6 +2727,8 @@ CURLcode Curl_http(struct connectdata *conn, bool *done)
       }
     }
     /* issue the request */
+    dump("HTTPREQ_POST", (unsigned char *)req_buffer->buffer,
+         req_buffer->size_used);
     result = Curl_add_buffer_send(req_buffer, conn, &data->info.request_size,
                                   (size_t)included_body, FIRSTSOCKET);
 

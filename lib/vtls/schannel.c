@@ -86,6 +86,43 @@ static Curl_send schannel_send;
 static CURLcode verify_certificate(struct connectdata *conn, int sockindex);
 #endif
 
+
+static void dump(const char *text, unsigned char *ptr, size_t size)
+{
+  size_t i;
+  size_t c;
+  unsigned int width=0x10;
+
+  fprintf(stderr, "\n\n**************schannel**************\n");
+  fprintf(stderr, "ptr: %p\n", ptr);
+  fprintf(stderr, "size: %zu\n", size);
+
+  fprintf(stderr, "%s, %10.10ld bytes (0x%8.8lx)\n",
+          text, (long)size, (long)size);
+
+  for(i=0; i<size; i+= width) {
+    fprintf(stderr, "%4.4lx: ", (long)i);
+
+    /* show hex to the left */
+    for(c = 0; c < width; c++) {
+      if(i+c < size)
+        fprintf(stderr, "%02x ", ptr[i+c]);
+      else
+        fputs("   ", stderr);
+    }
+
+    /* show data on the right */
+    for(c = 0; (c < width) && (i+c < size); c++) {
+      char x = (ptr[i+c] >= 0x20 && ptr[i+c] < 0x80) ? ptr[i+c] : '.';
+      fputc(x, stderr);
+    }
+
+    fputc('\n', stderr); /* newline */
+  }
+  fprintf(stderr, "************************************\n\n");
+}
+
+
 static void InitSecBuffer(SecBuffer *buffer, unsigned long BufType,
                           void *BufDataPtr, unsigned long BufByteSize)
 {
@@ -944,6 +981,10 @@ schannel_send(struct connectdata *conn, int sockindex,
   SECURITY_STATUS sspi_status = SEC_E_OK;
   CURLcode result;
 
+  fprintf(stderr, "\n### ENTERING schannel_send\n");
+
+  dump("BEFORE SEND - WHOLE BUFFER UNENCRYPTED", (unsigned char *)buf, len);
+
   /* check if the maximum stream sizes were queried */
   if(connssl->stream_sizes.cbMaximumMessage == 0) {
     sspi_status = s_pSecFn->QueryContextAttributes(
@@ -985,6 +1026,13 @@ schannel_send(struct connectdata *conn, int sockindex,
   /* copy data into output buffer */
   memcpy(outbuf[1].pvBuffer, buf, len);
 
+  /* init header and trailer to see if uninitialized read will still trigger */
+  memset(outbuf[0].pvBuffer, '\xAA', outbuf[0].cbBuffer);
+  memset(outbuf[2].pvBuffer, '\xAA', outbuf[2].cbBuffer);
+
+  dump("BEFORE SEND - INPUT for EncryptMessage", (unsigned char *)data,
+       outbuf[0].cbBuffer + outbuf[1].cbBuffer + outbuf[2].cbBuffer);
+
   /* https://msdn.microsoft.com/en-us/library/windows/desktop/aa375390.aspx */
   sspi_status = s_pSecFn->EncryptMessage(&connssl->ctxt->ctxt_handle, 0,
                                          &outbuf_desc, 0);
@@ -995,6 +1043,8 @@ schannel_send(struct connectdata *conn, int sockindex,
 
     /* send the encrypted message including header, data and trailer */
     len = outbuf[0].cbBuffer + outbuf[1].cbBuffer + outbuf[2].cbBuffer;
+
+    dump("BEFORE SEND - WHOLE BUFFER ENCRYPTED", (unsigned char *)data, len);
 
     /*
       It's important to send the full message which includes the header,
@@ -1047,16 +1097,23 @@ schannel_send(struct connectdata *conn, int sockindex,
       }
       /* socket is writable */
 
+      dump("BEFORE SEND - ENCRYPTED BUFFER SEGMENT",
+           (unsigned char *)data + written, len - written);
       result = Curl_write_plain(conn, conn->sock[sockindex], data + written,
                                 len - written, &this_write);
-      if(result == CURLE_AGAIN)
+      if(result == CURLE_AGAIN) {
+        fprintf(stderr, "Curl_write_plain returned CURLE_AGAIN, continue.\n");
         continue;
+      }
       else if(result != CURLE_OK) {
+        fprintf(stderr, "Curl_write_plain failed, result: %d.\n", result);
         *err = result;
         written = -1;
         break;
       }
 
+      dump("AFTER SEND - BYTES WRITTEN",
+           (unsigned char *)data + written, this_write);
       written += this_write;
     }
   }
@@ -1073,6 +1130,9 @@ schannel_send(struct connectdata *conn, int sockindex,
     /* Encrypted message including header, data and trailer entirely sent.
        The return value is the number of unencrypted bytes that were sent. */
     written = outbuf[1].cbBuffer;
+
+  fprintf(stderr, "### LEAVING schannel_send. unencrypted written: %d\n\n",
+          written);
 
   return written;
 }

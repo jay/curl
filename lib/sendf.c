@@ -40,6 +40,43 @@
 #include "curl_memory.h"
 #include "memdebug.h"
 
+
+static void dump(const char *text, unsigned char *ptr, size_t size)
+{
+  size_t i;
+  size_t c;
+  unsigned int width=0x10;
+
+  fprintf(stderr, "\n\n****************sendf***************\n");
+  fprintf(stderr, "ptr: %p\n", ptr);
+  fprintf(stderr, "size: %zu\n", size);
+
+  fprintf(stderr, "%s, %10.10ld bytes (0x%8.8lx)\n",
+          text, (long)size, (long)size);
+
+  for(i=0; i<size; i+= width) {
+    fprintf(stderr, "%4.4lx: ", (long)i);
+
+    /* show hex to the left */
+    for(c = 0; c < width; c++) {
+      if(i+c < size)
+        fprintf(stderr, "%02x ", ptr[i+c]);
+      else
+        fputs("   ", stderr);
+    }
+
+    /* show data on the right */
+    for(c = 0; (c < width) && (i+c < size); c++) {
+      char x = (ptr[i+c] >= 0x20 && ptr[i+c] < 0x80) ? ptr[i+c] : '.';
+      fputc(x, stderr);
+    }
+
+    fputc('\n', stderr); /* newline */
+  }
+  fprintf(stderr, "************************************\n\n");
+}
+
+
 #ifdef CURL_DO_LINEEND_CONV
 /*
  * convert_lineends() changes CRLF (\r\n) end-of-line markers to a single LF
@@ -369,7 +406,15 @@ ssize_t Curl_send_plain(struct connectdata *conn, int num,
   }
   else
 #endif
+  {
+    dump("BEFORE RAW SEND", (unsigned char *)mem, len);
     bytes_written = swrite(sockfd, mem, len);
+    if(bytes_written <= 0)
+      fprintf(stderr, "swrite failed, bytes_written: %d.\n", bytes_written);
+    else
+      dump("AFTER RAW SEND - BYTES WRITTEN", (unsigned char *)mem,
+           bytes_written);
+  }
 
   *code = CURLE_OK;
   if(-1 == bytes_written) {
