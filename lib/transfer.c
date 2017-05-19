@@ -1640,9 +1640,44 @@ CURLcode Curl_follow(struct Curl_easy *data,
   /* Location: redirect */
   bool disallowport = FALSE;
 
+  /* dup newurl input and clean it up */
+  if(!is_absolute_url(newurl))  {
+    /***
+     *DANG* this is an RFC 2068 violation. The URL is supposed
+     to be absolute and this doesn't seem to be that!
+     */
+    char *absolute = concat_url(data->change.url, newurl);
+    if(!absolute)
+      return CURLE_OUT_OF_MEMORY;
+    newurl = absolute;
+  }
+  else {
+    /* The new URL MAY contain space or high byte values, that means a mighty
+       stupid redirect URL but we still make an effort to do "right". */
+    char *newest;
+    size_t newlen = strlen_url(newurl);
+
+    /* This is an absolute URL, don't allow the custom port number */
+    disallowport = TRUE;
+
+    newest = malloc(newlen+1); /* get memory for this */
+    if(!newest)
+      return CURLE_OUT_OF_MEMORY;
+    strcpy_url(newest, newurl); /* create a space-free URL */
+    newurl = newest; /* use this instead now */
+  }
+
+  if(type == FOLLOW_FAKE) {
+    /* we're only figuring out the new url if we would've followed locations
+       but now we're done so we can get out! */
+    data->info.wouldredirect = newurl;
+    return CURLE_OK;
+  }
+
   if(type == FOLLOW_REDIR) {
     if((data->set.maxredirs != -1) &&
-        (data->set.followlocation >= data->set.maxredirs)) {
+       (data->set.followlocation >= data->set.maxredirs)) {
+      data->info.wouldredirect = newurl;
       failf(data, "Maximum (%ld) redirects followed", data->set.maxredirs);
       return CURLE_TOO_MANY_REDIRECTS;
     }
@@ -1667,43 +1702,6 @@ CURLcode Curl_follow(struct Curl_easy *data,
         return CURLE_OUT_OF_MEMORY;
       data->change.referer_alloc = TRUE; /* yes, free this later */
     }
-  }
-
-  if(!is_absolute_url(newurl))  {
-    /***
-     *DANG* this is an RFC 2068 violation. The URL is supposed
-     to be absolute and this doesn't seem to be that!
-     */
-    char *absolute = concat_url(data->change.url, newurl);
-    if(!absolute)
-      return CURLE_OUT_OF_MEMORY;
-    free(newurl);
-    newurl = absolute;
-  }
-  else {
-    /* The new URL MAY contain space or high byte values, that means a mighty
-       stupid redirect URL but we still make an effort to do "right". */
-    char *newest;
-    size_t newlen = strlen_url(newurl);
-
-    /* This is an absolute URL, don't allow the custom port number */
-    disallowport = TRUE;
-
-    newest = malloc(newlen+1); /* get memory for this */
-    if(!newest)
-      return CURLE_OUT_OF_MEMORY;
-    strcpy_url(newest, newurl); /* create a space-free URL */
-
-    free(newurl); /* that was no good */
-    newurl = newest; /* use this instead now */
-
-  }
-
-  if(type == FOLLOW_FAKE) {
-    /* we're only figuring out the new url if we would've followed locations
-       but now we're done so we can get out! */
-    data->info.wouldredirect = newurl;
-    return CURLE_OK;
   }
 
   if(disallowport)

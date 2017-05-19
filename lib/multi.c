@@ -1715,8 +1715,8 @@ static CURLMcode multi_runsingle(struct Curl_multi *multi,
               else {
                 /* Follow failed */
                 result = drc;
-                free(newurl);
               }
+              free(newurl);
             }
             else {
               /* done didn't return OK or SEND_ERROR */
@@ -1963,9 +1963,6 @@ static CURLMcode multi_runsingle(struct Curl_multi *multi,
             if(!result) {
               multistate(data, CURLM_STATE_CONNECT);
               rc = CURLM_CALL_MULTI_PERFORM;
-              newurl = NULL; /* handed over the memory ownership to
-                                Curl_follow(), make sure we don't free() it
-                                here */
             }
           }
         }
@@ -1979,9 +1976,7 @@ static CURLMcode multi_runsingle(struct Curl_multi *multi,
             newurl = data->req.location;
             data->req.location = NULL;
             result = Curl_follow(data, newurl, FOLLOW_FAKE);
-            if(!result)
-              newurl = NULL; /* allocation was handed over Curl_follow() */
-            else
+            if(result)
               stream_error = TRUE;
           }
 
