@@ -71,7 +71,6 @@
 #include "tool_sleep.h"
 #include "tool_urlglob.h"
 #include "tool_util.h"
-#include "tool_writeenv.h"
 #include "tool_writeout.h"
 #include "tool_xattr.h"
 #include "tool_vms.h"
@@ -93,21 +92,12 @@ CURLcode curl_easy_perform_ev(CURL *easy);
 #  define O_BINARY 0
 #endif
 
-#define CURL_CA_CERT_ERRORMSG1                                              \
-  "More details here: https://curl.haxx.se/docs/sslcerts.html\n\n"           \
-  "curl performs SSL certificate verification by default, "                 \
-  "using a \"bundle\"\n"                                                    \
-  " of Certificate Authority (CA) public keys (CA certs). If the default\n" \
-  " bundle file isn't adequate, you can specify an alternate file\n"        \
-  " using the --cacert option.\n"
-
-#define CURL_CA_CERT_ERRORMSG2                                              \
-  "If this HTTPS server uses a certificate signed by a CA represented in\n" \
-  " the bundle, the certificate verification probably failed due to a\n"    \
-  " problem with the certificate (it might be expired, or the name might\n" \
-  " not match the domain name in the URL).\n"                               \
-  "If you'd like to turn off curl's verification of the certificate, use\n" \
-  " the -k (or --insecure) option.\n"
+#define CURL_CA_CERT_ERRORMSG                                               \
+  "More details here: https://curl.haxx.se/docs/sslcerts.html\n\n"          \
+  "curl failed to verify the legitimacy of the server and therefore "       \
+  "could not\nestablish a secure connection to it. To learn more about "    \
+  "this situation and\nhow to fix it, please visit the web page mentioned " \
+  "above.\n"
 
 static bool is_fatal_error(CURLcode code)
 {
@@ -185,7 +175,7 @@ static curl_off_t VmsSpecialSize(const char *name,
 #endif /* __VMS */
 
 #if defined(HAVE_UTIME) || \
-    (defined(WIN32) && (CURL_SIZEOF_CURL_OFF_T >= 8))
+    (defined(WIN32) && (SIZEOF_CURL_OFF_T >= 8))
 static void setfiletime(long filetime, const char *filename,
                         FILE *error_stream)
 {
@@ -193,10 +183,10 @@ static void setfiletime(long filetime, const char *filename,
 /* Windows utime() may attempt to adjust our unix gmt 'filetime' by a daylight
    saving time offset and since it's GMT that is bad behavior. When we have
    access to a 64-bit type we can bypass utime and set the times directly. */
-#if defined(WIN32) && (CURL_SIZEOF_CURL_OFF_T >= 8)
+#if defined(WIN32) && (SIZEOF_CURL_OFF_T >= 8)
     HANDLE hfile;
 
-#if (CURL_SIZEOF_LONG >= 8)
+#if (SIZEOF_LONG >= 8)
     /* 910670515199 is the maximum unix filetime that can be used as a
        Windows FILETIME without overflow: 30827-12-31T23:59:59. */
     if(filetime > CURL_OFF_T_C(910670515199)) {
@@ -205,7 +195,7 @@ static void setfiletime(long filetime, const char *filename,
               filetime);
       return;
     }
-#endif /* CURL_SIZEOF_LONG >= 8 */
+#endif /* SIZEOF_LONG >= 8 */
 
     hfile = CreateFileA(filename, FILE_WRITE_ATTRIBUTES,
                         (FILE_SHARE_READ | FILE_SHARE_WRITE |
@@ -231,6 +221,17 @@ static void setfiletime(long filetime, const char *filename,
               "CreateFile failed: GetLastError %u\n",
               filetime, GetLastError());
     }
+
+#elif defined(HAVE_UTIMES)
+    struct timeval times[2];
+    times[0].tv_sec = times[1].tv_sec = filetime;
+    times[0].tv_usec = times[1].tv_usec = 0;
+    if(utimes(filename, times)) {
+      fprintf(error_stream,
+              "Failed to set filetime %ld on outfile: errno %d\n",
+              filetime, errno);
+    }
+
 #elif defined(HAVE_UTIME)
     struct utimbuf times;
     times.actime = (time_t)filetime;
@@ -244,7 +245,9 @@ static void setfiletime(long filetime, const char *filename,
   }
 }
 #endif /* defined(HAVE_UTIME) || \
-          (defined(WIN32) && (CURL_SIZEOF_CURL_OFF_T >= 8)) */
+          (defined(WIN32) && (SIZEOF_CURL_OFF_T >= 8)) */
+
+#define BUFFER_SIZE (100*1024)
 
 static CURLcode operate_do(struct GlobalConfig *global,
                            struct OperationConfig *config)
@@ -850,6 +853,9 @@ static CURLcode operate_do(struct GlobalConfig *global,
           set_binmode(stdout);
         }
 
+        /* explicitly passed to stdout means okaying binary gunk */
+        config->terminal_binary_ok = (outfile && !strcmp(outfile, "-"));
+
         if(!config->tcp_nodelay)
           my_setopt(curl, CURLOPT_TCP_NODELAY, 0L);
 
@@ -888,10 +894,12 @@ static CURLcode operate_do(struct GlobalConfig *global,
         my_setopt(curl, CURLOPT_SEEKDATA, &input);
         my_setopt(curl, CURLOPT_SEEKFUNCTION, tool_seek_cb);
 
-        if(config->recvpersecond)
-          /* tell libcurl to use a smaller sized buffer as it allows us to
-             make better sleeps! 7.9.9 stuff! */
+        if(config->recvpersecond &&
+           (config->recvpersecond < BUFFER_SIZE))
+          /* use a smaller sized buffer for better sleeps */
           my_setopt(curl, CURLOPT_BUFFERSIZE, (long)config->recvpersecond);
+        else
+          my_setopt(curl, CURLOPT_BUFFERSIZE, (long)BUFFER_SIZE);
 
         /* size of uploaded file: */
         if(uploadfilesize != -1)
@@ -955,6 +963,7 @@ static CURLcode operate_do(struct GlobalConfig *global,
 #endif /* !CURL_DISABLE_PROXY */
 
         my_setopt(curl, CURLOPT_FAILONERROR, config->failonerror?1L:0L);
+        my_setopt(curl, CURLOPT_REQUEST_TARGET, config->request_target);
         my_setopt(curl, CURLOPT_UPLOAD, uploadfile?1L:0L);
         my_setopt(curl, CURLOPT_DIRLISTONLY, config->dirlistonly?1L:0L);
         my_setopt(curl, CURLOPT_APPEND, config->ftp_append?1L:0L);
@@ -993,8 +1002,8 @@ static CURLcode operate_do(struct GlobalConfig *global,
             my_setopt(curl, CURLOPT_POSTFIELDSIZE_LARGE,
                       config->postfieldsize);
             break;
-          case HTTPREQ_FORMPOST:
-            my_setopt_httppost(curl, CURLOPT_HTTPPOST, config->httppost);
+          case HTTPREQ_MIMEPOST:
+            my_setopt_mimepost(curl, CURLOPT_MIMEPOST, config->mimepost);
             break;
           default:
             break;
@@ -1073,6 +1082,10 @@ static CURLcode operate_do(struct GlobalConfig *global,
              to fail if we are not talking to who we think we should */
           my_setopt_str(curl, CURLOPT_SSH_HOST_PUBLIC_KEY_MD5,
                         config->hostpubmd5);
+
+          /* new in libcurl 7.56.0 */
+          if(config->ssh_compression)
+            my_setopt(curl, CURLOPT_SSH_COMPRESSION, 1L);
         }
 
         if(config->cacert)
@@ -1324,6 +1337,11 @@ static CURLcode operate_do(struct GlobalConfig *global,
         if(config->socks5_gssapi_nec)
           my_setopt_str(curl, CURLOPT_SOCKS5_GSSAPI_NEC,
                         config->socks5_gssapi_nec);
+
+        /* new in curl 7.55.0 */
+        if(config->socks5_auth)
+          my_setopt_bitmask(curl, CURLOPT_SOCKS5_AUTH,
+                            (long)config->socks5_auth);
 
         /* new in curl 7.43.0 */
         if(config->proxy_service_name)
@@ -1733,9 +1751,6 @@ static CURLcode operate_do(struct GlobalConfig *global,
         if(config->writeout)
           ourWriteOut(curl, &outs, config->writeout);
 
-        if(config->writeenv)
-          ourWriteEnv(curl);
-
         /*
         ** Code within this loop may jump directly here to label 'show_error'
         ** in order to display an error message for CURLcode stored in 'res'
@@ -1753,16 +1768,14 @@ static CURLcode operate_do(struct GlobalConfig *global,
         }
         else
 #endif
-        if(result && global->showerror) {
+        if(config->synthetic_error) {
+          ;
+        }
+        else if(result && global->showerror) {
           fprintf(global->errors, "curl: (%d) %s\n", result, (errorbuffer[0]) ?
                   errorbuffer : curl_easy_strerror(result));
           if(result == CURLE_SSL_CACERT)
-            fprintf(global->errors, "%s%s%s",
-                    CURL_CA_CERT_ERRORMSG1, CURL_CA_CERT_ERRORMSG2,
-                    ((curlinfo->features & CURL_VERSION_HTTPS_PROXY) ?
-                     "HTTPS-proxy has similar options --proxy-cacert "
-                     "and --proxy-insecure.\n" :
-                     ""));
+            fputs(CURL_CA_CERT_ERRORMSG, global->errors);
         }
 
         /* Fall through comment to 'quit_urls' label */
@@ -1817,7 +1830,7 @@ static CURLcode operate_do(struct GlobalConfig *global,
 #endif
 
 #if defined(HAVE_UTIME) || \
-    (defined(WIN32) && (CURL_SIZEOF_CURL_OFF_T >= 8))
+    (defined(WIN32) && (SIZEOF_CURL_OFF_T >= 8))
         /* File time can only be set _after_ the file has been closed */
         if(!result && config->remote_time && outs.s_isreg && outs.filename) {
           /* Ask libcurl if we got a remote file time */
@@ -1827,7 +1840,7 @@ static CURLcode operate_do(struct GlobalConfig *global,
             setfiletime(filetime, outs.filename, config->global->errors);
         }
 #endif /* defined(HAVE_UTIME) || \
-          (defined(WIN32) && (CURL_SIZEOF_CURL_OFF_T >= 8)) */
+          (defined(WIN32) && (SIZEOF_CURL_OFF_T >= 8)) */
 
 #ifdef USE_METALINK
         if(!metalink && config->use_metalink && result == CURLE_OK) {
