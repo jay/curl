@@ -1009,10 +1009,11 @@ struct connectdata {
   /*
    * To avoid multiple malloc() calls, the ssl_connect_data structures
    * associated with a connectdata struct are allocated in the same block
-   * as the latter. This field forces alignment to an 8-byte boundary so
-   * that this all works.
+   * as the latter. This field forces alignment to an 8-byte boundary (or at
+   * least however many bytes a curl_off_t occupies; usually 8 if a type with
+   * that size is available).
    */
-  long long *align_data__do_not_use;
+  curl_off_t align_data__do_not_use;
 #endif
 };
 
