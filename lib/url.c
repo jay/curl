@@ -1780,14 +1780,35 @@ static void llist_dtor(void *user, void *element)
  */
 static struct connectdata *allocate_conn(struct Curl_easy *data)
 {
+  struct connectdata *conn;
+  size_t connsize = sizeof(struct connectdata);
+
 #ifdef USE_SSL
-#define SSL_EXTRA + 4 * Curl_ssl->sizeof_ssl_backend_data - sizeof(long long)
-#else
-#define SSL_EXTRA 0
+  size_t sslsize = Curl_ssl->sizeof_ssl_backend_data;
+  /* align the ssl_backend_data on a 16 byte boundary */
+  size_t alignsize = ((sizeof(struct connectdata) % 16) ?
+                      (16 - (sizeof(struct connectdata) % 16)) : 0);
+  connsize += alignsize + (4 * sslsize);
 #endif
-  struct connectdata *conn = calloc(1, sizeof(struct connectdata) + SSL_EXTRA);
+
+  conn = calloc(1, connsize);
   if(!conn)
     return NULL;
+
+#ifdef USE_SSL
+  /*
+   * To save on malloc()s, the SSL backend-specific data has been allocated at
+   * the end of the connectdata struct. Additionally, these backend pointers
+   * can be swapped by vtls (eg ssl backend data becomes proxy backend data).
+   */
+  {
+    char *end = (char *)conn + connsize;
+    conn->ssl[0].backend = (void *)(end - (4 * sslsize));
+    conn->ssl[1].backend = (void *)(end - (3 * sslsize));
+    conn->proxy_ssl[0].backend = (void *)(end - (2 * sslsize));
+    conn->proxy_ssl[1].backend = (void *)(end - (1 * sslsize));
+  }
+#endif
 
   conn->handler = &Curl_handler_dummy;  /* Be sure we have a handler defined
                                            already from start to avoid NULL
@@ -1867,23 +1888,6 @@ static struct connectdata *allocate_conn(struct Curl_easy *data)
   conn->proxy_ssl_config.verifyhost = data->set.proxy_ssl.primary.verifyhost;
 
   conn->ip_version = data->set.ipver;
-
-#ifdef USE_SSL
-  /*
-   * To save on malloc()s, the SSL backend-specific data has been allocated
-   * at the end of the connectdata struct.
-   */
-  {
-    char *p = (char *)&conn->align_data__do_not_use;
-    conn->ssl[0].backend = (struct ssl_backend_data *)p;
-    conn->ssl[1].backend =
-      (struct ssl_backend_data *)(p + Curl_ssl->sizeof_ssl_backend_data);
-    conn->proxy_ssl[0].backend =
-      (struct ssl_backend_data *)(p + Curl_ssl->sizeof_ssl_backend_data * 2);
-    conn->proxy_ssl[1].backend =
-      (struct ssl_backend_data *)(p + Curl_ssl->sizeof_ssl_backend_data * 3);
-  }
-#endif
 
 #if !defined(CURL_DISABLE_HTTP) && defined(USE_NTLM) && \
     defined(NTLM_WB_ENABLED)
