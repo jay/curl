@@ -1834,7 +1834,12 @@ static CURLcode operate_do(struct GlobalConfig *global,
 
         /* Close the file */
         if(outs.fopened && outs.stream) {
-          int rc = fclose(outs.stream);
+          int rc;
+#ifdef WIN32
+          /* Enable the archive bit before we close the file */
+          (void)enable_file_archive_bit(outs.stream);
+#endif
+          rc = fclose(outs.stream);
           if(!result && rc) {
             /* something went wrong in the writing process */
             result = CURLE_WRITE_ERROR;

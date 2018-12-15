@@ -725,6 +725,114 @@ cleanup:
   return slist;
 }
 
+const int FileBasicInformation = 4;
+
+typedef struct _FILE_BASIC_INFORMATION {
+  LARGE_INTEGER CreationTime;
+  LARGE_INTEGER LastAccessTime;
+  LARGE_INTEGER LastWriteTime;
+  LARGE_INTEGER ChangeTime;
+  ULONG         FileAttributes;
+} FILE_BASIC_INFORMATION, *PFILE_BASIC_INFORMATION;
+
+typedef LONG (WINAPI *NTQUERYINFORMATIONFILE)(HANDLE FileHandle,
+                                              PVOID IoStatusBlock,
+                                              PVOID FileInformation,
+                                              ULONG FileInformationLength,
+                                              int FileInformationClass);
+
+typedef LONG (WINAPI *NTSETINFORMATIONFILE)(HANDLE FileHandle,
+                                            PVOID IoStatusBlock,
+                                            PVOID FileInformation,
+                                            ULONG FileInformationLength,
+                                            int FileInformationClass);
+
+/* Enable or disable archive bit for FILE by using FILE_ATTRIBUTE_ARCHIVE flag.
+ *
+ * Returns TRUE on success and FALSE on failure. If reading or writing the
+ * archive bit is not supported by the file it is treated as a failure.
+ */
+BOOL set_file_archive_bit(FILE *file, BOOL enable)
+{
+  HANDLE h;
+  NTSETINFORMATIONFILE NtSetInformationFile;
+  NTQUERYINFORMATIONFILE NtQueryInformationFile;
+  void *iostatus;  /* IO_STATUS_BLOCK status output which we don't need */
+  FILE_BASIC_INFORMATION info;
+
+  if(!file)
+    return TRUE;
+
+  NtQueryInformationFile = (NTQUERYINFORMATIONFILE)
+    GetProcAddress(GetModuleHandleA("ntdll"), "NtQueryInformationFile");
+
+  if(!NtQueryInformationFile)
+    return FALSE;
+
+  NtSetInformationFile = (NTSETINFORMATIONFILE)
+    GetProcAddress(GetModuleHandleA("ntdll"), "NtSetInformationFile");
+
+  if(!NtSetInformationFile)
+    return FALSE;
+
+  if(fflush(file))
+    return FALSE;
+
+  h = (HANDLE)_get_osfhandle(fileno(file));
+
+  if(h == INVALID_HANDLE_VALUE)
+    return FALSE;
+
+  if(!FlushFileBuffers(h)) /* may fail on devices */
+    return FALSE;
+
+  iostatus = calloc(128, 1);
+  if(!iostatus)
+    return FALSE;
+
+  /* Read the attributes. Not all files support it so it may fail. */
+  if(NtQueryInformationFile(h, iostatus, &info, sizeof(info),
+                            FileBasicInformation)) {
+   free(iostatus);
+   return FALSE;
+  }
+
+  info.ChangeTime.QuadPart = 0;
+  info.CreationTime.QuadPart = 0;
+  info.LastAccessTime.QuadPart = 0;
+  info.LastWriteTime.QuadPart = 0;
+
+  if(enable) {
+    if(info.FileAttributes == FILE_ATTRIBUTE_NORMAL)
+      info.FileAttributes = 0;
+    info.FileAttributes |= FILE_ATTRIBUTE_ARCHIVE;
+  }
+  else {
+    if(info.FileAttributes == FILE_ATTRIBUTE_NORMAL) {
+      free(iostatus);
+      return TRUE;
+    }
+    info.FileAttributes &= ~FILE_ATTRIBUTE_ARCHIVE;
+    if(!info.FileAttributes)
+      info.FileAttributes = FILE_ATTRIBUTE_NORMAL;
+  }
+
+  /* Write the attributes. Not all files support it so it may fail. */
+  if(NtSetInformationFile(h, iostatus, &info, sizeof(info),
+                         FileBasicInformation)) {
+   free(iostatus);
+   return FALSE;
+  }
+
+  if(!FlushFileBuffers(h)) { /* may fail on devices */
+    free(iostatus);
+    return FALSE;
+  }
+
+  free(iostatus);
+  return TRUE;
+}
+
 #endif /* WIN32 */
 
 #endif /* MSDOS || WIN32 */

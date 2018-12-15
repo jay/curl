@@ -26,6 +26,7 @@
 #include "curlx.h"
 
 #include "tool_cfgable.h"
+#include "tool_doswin.h"
 #include "tool_msgs.h"
 #include "tool_cb_wrt.h"
 
@@ -55,12 +56,51 @@ bool tool_create_output_file(struct OutStruct *outs,
   }
 
   /* open file for writing */
+#ifdef WIN32
+  /* Use CreateFile to open the FILE instead of fopen, since the latter sets
+     the archive bit which we don't want to set until we're done writing.
+     https://github.com/curl/curl/issues/3354 */
+  {
+    int fd;
+    HANDLE h = CreateFileA(outs->filename, (GENERIC_READ | GENERIC_WRITE),
+                           FILE_SHARE_READ, NULL, OPEN_ALWAYS,
+                           (FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN),
+                           NULL);
+    if(h == INVALID_HANDLE_VALUE) {
+      warnf(global, "Failed to create the file %s: CreateFile failed.\n",
+            outs->filename);
+      return FALSE;
+    }
+
+    fd = _open_osfhandle((intptr_t)h, (append ? _O_APPEND : 0));
+    if(fd == -1) {
+      warnf(global, "Failed to create the file %s: _open_osfhandle failed.\n",
+            outs->filename);
+      CloseHandle(h);
+      return FALSE;
+    }
+
+    file = fdopen(fd, (append ? "ab" : "wb"));
+    if(!file) {
+      warnf(global, "Failed to create the file %s: %s\n", outs->filename,
+            strerror(errno));
+      _close(fd); /* this calls CloseHandle */
+      return FALSE;
+    }
+
+    /* Disable the archive bit before we write to the file. This is necessary
+       because CreateFile ignores FILE_ATTRIBUTE_NORMAL for existing files. */
+    (void)disable_file_archive_bit(file);
+  }
+#else
   file = fopen(outs->filename, append?"ab":"wb");
   if(!file) {
     warnf(global, "Failed to create the file %s: %s\n", outs->filename,
           strerror(errno));
     return FALSE;
   }
+#endif
+
   outs->s_isreg = TRUE;
   outs->fopened = TRUE;
   outs->stream = file;

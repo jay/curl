@@ -62,6 +62,10 @@ CURLcode FindWin32CACert(struct OperationConfig *config,
                          const char *bundle_file);
 struct curl_slist *GetLoadedModulePaths(void);
 
+BOOL set_file_archive_bit(FILE *file, BOOL enable);
+#define enable_file_archive_bit(x) set_file_archive_bit(x, TRUE)
+#define disable_file_archive_bit(x) set_file_archive_bit(x, FALSE)
+
 #endif /* WIN32 */
 
 #endif /* MSDOS || WIN32 */
