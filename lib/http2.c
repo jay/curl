@@ -1835,7 +1835,7 @@ static ssize_t http2_send(struct connectdata *conn, int sockindex,
   nghttp2_nv *nva = NULL;
   size_t nheader;
   size_t i;
-  size_t authority_idx;
+  size_t authority_idx, path_idx, scheme_idx;
   char *hdbuf = (char *)mem;
   char *end, *line_end;
   nghttp2_data_provider data_prd;
@@ -1947,6 +1947,7 @@ static ssize_t http2_send(struct connectdata *conn, int sockindex,
   }
   if(!end || end == hdbuf)
     goto fail;
+  path_idx = 1;
   nva[1].name = (unsigned char *)":path";
   nva[1].namelen = strlen((char *)nva[1].name);
   nva[1].value = (unsigned char *)hdbuf;
@@ -1957,6 +1958,7 @@ static ssize_t http2_send(struct connectdata *conn, int sockindex,
     goto fail;
   }
 
+  scheme_idx = 2;
   nva[2].name = (unsigned char *)":scheme";
   nva[2].namelen = strlen((char *)nva[2].name);
   if(conn->handler->flags & PROTOPT_SSL)
@@ -2028,6 +2030,50 @@ static ssize_t http2_send(struct connectdata *conn, int sockindex,
       goto fail;
     }
     ++i;
+  }
+
+  /* hack to fix http proxy over http2 */
+  if(conn->bits.httpproxy && !conn->bits.tunnel_proxy) {
+    if(!authority_idx || !path_idx || !scheme_idx) {
+      failf(conn->data, "http2 missing pseudo-headers for proxy modification");
+      goto fail;
+    }
+    for(i = 0; i < nva[path_idx].valuelen; ++i) {
+      if(nva[path_idx].value[i] == ':') {
+        if(i + 2 < nva[path_idx].valuelen &&
+           nva[path_idx].value[i + 1] == '/' &&
+           nva[path_idx].value[i + 2] == '/')
+          break;
+        else {
+          failf(conn->data, "http2 bad scheme in path for proxy modification");
+          goto fail;
+        }
+      }
+    }
+    if(i == 0 || i == nva[path_idx].valuelen) {
+      failf(conn->data, "http2 missing scheme in path for proxy modification");
+      goto fail;
+    }
+    nva[scheme_idx].valuelen = &nva[path_idx].value[i] -
+                               nva[path_idx].value;
+    nva[scheme_idx].value = nva[path_idx].value;
+    nva[path_idx].valuelen -= &nva[path_idx].value[i + 3] -
+                              nva[path_idx].value;
+    nva[path_idx].value = &nva[path_idx].value[i + 3];
+    for(i = 0; i < nva[path_idx].valuelen; ++i) {
+      if(nva[path_idx].value[i] == '/')
+        break;
+    }
+    if(i == 0 || i == nva[path_idx].valuelen) {
+      failf(conn->data, "http2 missing host in path for proxy modification");
+      goto fail;
+    }
+    nva[authority_idx].valuelen = &nva[path_idx].value[i] -
+                                  nva[path_idx].value;
+    nva[authority_idx].value = nva[path_idx].value;
+    nva[path_idx].valuelen -= &nva[path_idx].value[i] -
+                              nva[path_idx].value;
+    nva[path_idx].value = &nva[path_idx].value[i];
   }
 
   /* :authority must come before non-pseudo header fields */
