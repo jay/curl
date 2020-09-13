@@ -41,7 +41,8 @@ CURLcode Curl_dyn_add(struct dynbuf *s, const char *str)
 CURLcode Curl_dyn_addf(struct dynbuf *s, const char *fmt, ...)
   WARN_UNUSED_RESULT;
 void Curl_dyn_reset(struct dynbuf *s);
-CURLcode Curl_dyn_tail(struct dynbuf *s, size_t trail);
+CURLcode Curl_dyn_erase(struct dynbuf *s, size_t pos, size_t len);
+CURLcode Curl_dyn_tail(struct dynbuf *s, size_t len);
 char *Curl_dyn_ptr(const struct dynbuf *s);
 unsigned char *Curl_dyn_uptr(const struct dynbuf *s);
 size_t Curl_dyn_len(const struct dynbuf *s);

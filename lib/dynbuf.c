@@ -125,29 +125,62 @@ void Curl_dyn_reset(struct dynbuf *s)
 
 #ifdef USE_NGTCP2
 /*
+ * Erase part of the buffer.
+ *
+ * Example data abc with \0 as internal dynbuf null:
+ * "abc\0" 1,1: "ac\0"
+ * "abc\0" 0,2: "c\0"
+ * "abc\0" 1,5: "a\0"
+ * "abc\0" 1,(size_t)-1: "a\0"
+ */
+CURLcode Curl_dyn_erase(struct dynbuf *s, size_t pos, size_t len)
+{
+  size_t remainder;
+
+  DEBUGASSERT(s);
+  DEBUGASSERT(s->init == DYNINIT);
+  DEBUGASSERT(!s->leng || s->bufr);
+
+  if(pos && pos >= s->leng)
+    return CURLE_BAD_FUNCTION_ARGUMENT;
+
+  /* if length overflow or too long then use max */
+  if(len > pos + len || s->leng < pos + len)
+    len = s->leng - pos;
+
+  if(!len)
+    return CURLE_OK;
+
+  if(len == s->leng) {
+    Curl_dyn_reset(s);
+    return CURLE_OK;
+  }
+
+  remainder = s->leng - (pos + len);
+
+  if(remainder)
+    memmove(&s->bufr[pos], &s->bufr[pos + len], remainder);
+
+  s->leng = pos + remainder;
+  s->bufr[s->leng] = 0;
+
+  return CURLE_OK;
+}
+
+/*
  * Specify the size of the tail to keep (number of bytes from the end of the
  * buffer). The rest will be dropped.
  */
-CURLcode Curl_dyn_tail(struct dynbuf *s, size_t trail)
+CURLcode Curl_dyn_tail(struct dynbuf *s, size_t len)
 {
   DEBUGASSERT(s);
   DEBUGASSERT(s->init == DYNINIT);
   DEBUGASSERT(!s->leng || s->bufr);
-  if(trail > s->leng)
-    return CURLE_BAD_FUNCTION_ARGUMENT;
-  else if(trail == s->leng)
-    return CURLE_OK;
-  else if(!trail) {
-    Curl_dyn_reset(s);
-  }
-  else {
-    memmove(&s->bufr[0], &s->bufr[s->leng - trail], trail);
-    s->leng = trail;
-  }
-  return CURLE_OK;
-
+  if(len > s->leng)
+     return CURLE_BAD_FUNCTION_ARGUMENT;
+  return Curl_dyn_erase(s, 0, s->leng - len);
 }
-#endif
+#endif /* USE_NGTCP2 */
 
 /*
  * Appends a buffer with length.

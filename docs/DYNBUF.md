@@ -48,6 +48,14 @@ Append a `printf()`-style string to the end of the buffer.
 
 Reset the buffer length, but leave the allocation.
 
+## erase
+
+    CURLcode Curl_dyn_erase(struct dynbuf *s, size_t pos, size_t length)
+
+Erase the buffer starting at `pos` and spanning `length` or to the end of the
+buffer, whichever comes first. You may use a length of (size_t)-1 to make it
+explicit that you're removing the end of the buffer.
+
 ## tail
 
     CURLcode Curl_dyn_tail(struct dynbuf *s, size_t length)
