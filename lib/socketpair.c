@@ -22,6 +22,7 @@
 
 #include "curl_setup.h"
 #include "socketpair.h"
+#include "strerror.h"
 
 #if !defined(HAVE_SOCKETPAIR) && !defined(CURL_DISABLE_SOCKETPAIR)
 #ifdef WIN32
@@ -69,9 +70,21 @@ int Curl_socketpair(int domain, int type, int protocol,
   (void)type;
   (void)protocol;
 
+  WSASetLastError(0);
+
+#define WSAERR(func) \
+do { \
+  char buffer[STRERROR_LEN]; \
+  DWORD gle = WSAGetLastError(); \
+  Curl_strerror(gle, buffer, sizeof(buffer)); \
+  fprintf(stderr, func " failed, line %u, WSAGetLastError %u: %s\n", \
+          __LINE__, gle, buffer); \
+  goto error; \
+} while(0)
+
   listener = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
   if(listener == CURL_SOCKET_BAD)
-    return -1;
+    WSAERR("socket listener");
 
   memset(&a, 0, sizeof(a));
   a.inaddr.sin_family = AF_INET;
@@ -82,31 +95,31 @@ int Curl_socketpair(int domain, int type, int protocol,
 
   if(setsockopt(listener, SOL_SOCKET, SO_REUSEADDR,
                 (char *)&reuse, (curl_socklen_t)sizeof(reuse)) == -1)
-    goto error;
+    WSAERR("setsockopt listener");
   if(bind(listener, &a.addr, sizeof(a.inaddr)) == -1)
-    goto error;
+    WSAERR("bind listener");
   if(getsockname(listener, &a.addr, &addrlen) == -1)
-    goto error;
+    WSAERR("getsockname listener");
   if(listen(listener, 1) == -1)
-    goto error;
+    WSAERR("listen listener");
   socks[0] = socket(AF_INET, SOCK_STREAM, 0);
   if(socks[0] == CURL_SOCKET_BAD)
-    goto error;
+    WSAERR("socket socks[0]");
   if(connect(socks[0], &a.addr, sizeof(a.inaddr)) == -1)
-    goto error;
+    WSAERR("connect socks[0]");
   socks[1] = accept(listener, NULL, NULL);
   if(socks[1] == CURL_SOCKET_BAD)
-    goto error;
+    WSAERR("accept listener socks[1]");
 
   /* verify that nothing else connected */
   msnprintf(data[0], sizeof(data[0]), "%p", socks);
   dlen = strlen(data[0]);
   if(swrite(socks[0], data[0], dlen) != dlen)
-    goto error;
+    WSAERR("swrite socks[0]");
   if(sread(socks[1], data[1], sizeof(data[1])) != dlen)
-    goto error;
+    WSAERR("sread socks[1]");
   if(memcmp(data[0], data[1], dlen))
-    goto error;
+    WSAERR("memcmp");
 
   sclose(listener);
   return 0;
