@@ -310,6 +310,26 @@ CURLcode Curl_write(struct Curl_easy *data,
 
   bytes_written = conn->send[num](data, num, mem, len, &result);
 
+  /* (Issue #6149) SSL servers may send control messages that have to be read
+     and processed during long uploads so we do a 0 byte read here so that can
+     happen. Note this read comes after send because some SSL libraries when
+     failed/delayed send may require calling it again before a read. */
+  if(result == CURLE_OK && (conn->handler->flags & PROTOPT_SSL))
+  {
+    int nread;
+    char placeholder;
+    /* This 100ms+ sleep causes syscall errors. Race condition? Seems OpenSSL
+       can't handle 0 byte reads.
+       https://8.8.8.8/
+       curl: (56) OpenSSL SSL_read: Connection closed abruptly, errno 0 (Fatal
+       because this is a curl debug build) */
+    //Sleep(3000);
+    result = Curl_read(data, sockfd, (char *)&placeholder, 0, &nread);
+    if(result != CURLE_OK && result != CURLE_AGAIN)
+      return result;
+    result = CURLE_OK;
+  }
+
   *written = bytes_written;
   if(bytes_written >= 0)
     /* we completely ignore the curlcode value when subzero is not returned */
