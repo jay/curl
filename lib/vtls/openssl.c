@@ -1363,12 +1363,41 @@ static struct curl_slist *ossl_engines_list(struct Curl_easy *data)
 
 static void ossl_closeone(struct Curl_easy *data,
                           struct connectdata *conn,
-                          struct ssl_connect_data *connssl)
+                          struct ssl_connect_data *connssl,
+                          int sockindex)
 {
   struct ssl_backend_data *backend = connssl->backend;
   if(backend->handle) {
     set_logger(conn, data);
-    (void)SSL_shutdown(backend->handle);
+    if(sockindex == FIRSTSOCKET) {
+      (void)SSL_shutdown(backend->handle);
+    }
+    else {
+      /* The SECONDSOCKET is only used for FTPS data channel which is one way.
+         Since it is one way make sure the server has sent (or received) all
+         the data by waiting for a close notify response. */
+      for(;;) {
+        int ret = SSL_shutdown(backend->handle);
+        fprintf(stderr, "shutdown of sockindex %d is result %d\n",
+                sockindex, ret);
+        if(ret == 1)
+          break;
+        if(ret < 0) {
+          int err = SSL_get_error(backend->handle, ret);
+          fprintf(stderr, "error code: %d\n", err);
+          if(err == SSL_ERROR_WANT_READ) {
+            SOCKET_READABLE(conn->sock[sockindex], 100);
+          }
+          else if(err == SSL_ERROR_WANT_WRITE) {
+            SOCKET_WRITABLE(conn->sock[sockindex], 100);
+          }
+          else /* some other error we can't do anything with */
+            break;
+        }
+        else
+          SOCKET_READABLE(conn->sock[sockindex], 100);
+      }
+    }
     SSL_set_connect_state(backend->handle);
 
     SSL_free(backend->handle);
@@ -1386,9 +1415,9 @@ static void ossl_closeone(struct Curl_easy *data,
 static void ossl_close(struct Curl_easy *data, struct connectdata *conn,
                        int sockindex)
 {
-  ossl_closeone(data, conn, &conn->ssl[sockindex]);
+  ossl_closeone(data, conn, &conn->ssl[sockindex], sockindex);
 #ifndef CURL_DISABLE_PROXY
-  ossl_closeone(data, conn, &conn->proxy_ssl[sockindex]);
+  ossl_closeone(data, conn, &conn->proxy_ssl[sockindex], sockindex);
 #endif
 }
 
