@@ -4160,6 +4160,8 @@ static ssize_t ossl_send(struct Curl_easy *data,
   struct ssl_connect_data *connssl = &conn->ssl[sockindex];
   struct ssl_backend_data *backend = connssl->backend;
 
+  fputs("ossl_send BEGIN\n", stderr);
+
   ERR_clear_error();
 
   memlen = (len > (size_t)INT_MAX) ? INT_MAX : (int)len;
@@ -4171,7 +4173,11 @@ static ssize_t ossl_send(struct Curl_easy *data,
 
     switch(err) {
     case SSL_ERROR_WANT_READ:
+      fputs("ossl_send SSL_ERROR_WANT_READ\n", stderr);
+      *curlcode = CURLE_AGAIN;
+      return -1;
     case SSL_ERROR_WANT_WRITE:
+      fputs("ossl_send SSL_ERROR_WANT_WRITE\n", stderr);
       /* The operation did not complete; the same TLS/SSL I/O function
          should be called again later. This is basically an EWOULDBLOCK
          equivalent. */
@@ -4222,6 +4228,7 @@ static ssize_t ossl_send(struct Curl_easy *data,
     return -1;
   }
   *curlcode = CURLE_OK;
+  fputs("ossl_send END\n", stderr);
   return (ssize_t)rc; /* number of bytes */
 }
 
@@ -4239,6 +4246,7 @@ static ssize_t ossl_recv(struct Curl_easy *data,   /* transfer */
   struct ssl_connect_data *connssl = &conn->ssl[num];
   struct ssl_backend_data *backend = connssl->backend;
 
+  fputs("ossl_recv BEGIN\n", stderr);
   ERR_clear_error();
 
   buffsize = (buffersize > (size_t)INT_MAX) ? INT_MAX : (int)buffersize;
@@ -4259,7 +4267,11 @@ static ssize_t ossl_recv(struct Curl_easy *data,   /* transfer */
         connclose(conn, "TLS close_notify");
       break;
     case SSL_ERROR_WANT_READ:
+      fputs("ossl_recv SSL_ERROR_WANT_READ\n", stderr);
+      *curlcode = CURLE_AGAIN;
+      return -1;
     case SSL_ERROR_WANT_WRITE:
+      fputs("ossl_recv SSL_ERROR_WANT_WRITE\n", stderr);
       /* there's data pending, re-invoke SSL_read() */
       *curlcode = CURLE_AGAIN;
       return -1;
@@ -4311,6 +4323,7 @@ static ssize_t ossl_recv(struct Curl_easy *data,   /* transfer */
 #endif
     }
   }
+  fputs("ossl_recv END\n", stderr);
   return nread;
 }
 
