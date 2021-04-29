@@ -60,6 +60,9 @@ struct per_transfer {
   time_t startat; /* when doing parallel transfers, this is a retry transfer
                      that has been set to sleep until this time before it
                      should get started (again) */
+  bool abort; /* when doing parallel transfers and failing early then this is
+                 set TRUE on all remaining transfers so they can be aborted
+                 from the progress callback */
 
   /* for parallel progress bar */
   curl_off_t dltotal;
