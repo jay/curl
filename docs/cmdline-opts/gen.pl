@@ -672,6 +672,10 @@ sub listglobals {
 sub mainpage {
     my (@files) = @_;
     my $ret;
+    if(!@files) {
+      @files = grep { -f $_ } glob "*.d";
+    }
+
     # show the page header
     header("page-header");
 
