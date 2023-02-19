@@ -230,6 +230,7 @@ int init_thread_sync_data(struct thread_data *td,
   if(!tsd->mtx)
     goto err_exit;
 
+  OutputDebugStringA("marker1");
   Curl_mutex_init(tsd->mtx);
 
 #ifndef CURL_DISABLE_SOCKETPAIR
@@ -237,6 +238,7 @@ int init_thread_sync_data(struct thread_data *td,
   if(Curl_socketpair(AF_UNIX, SOCK_STREAM, 0, &tsd->sock_pair[0]) < 0) {
     tsd->sock_pair[0] = CURL_SOCKET_BAD;
     tsd->sock_pair[1] = CURL_SOCKET_BAD;
+    OutputDebugStringA("marker2");
     goto err_exit;
   }
 #endif
@@ -245,6 +247,7 @@ int init_thread_sync_data(struct thread_data *td,
   /* Copying hostname string because original can be destroyed by parent
    * thread during gethostbyname execution.
    */
+  OutputDebugStringA("marker3");
   tsd->hostname = strdup(hostname);
   if(!tsd->hostname)
     goto err_exit;
@@ -258,6 +261,7 @@ int init_thread_sync_data(struct thread_data *td,
     tsd->sock_pair[0] = CURL_SOCKET_BAD;
   }
 #endif
+  OutputDebugStringA("marker4");
   destroy_thread_sync_data(tsd);
   return 0;
 }
@@ -440,6 +444,8 @@ static bool init_resolve_thread(struct Curl_easy *data,
   asp->dns = NULL;
   td->thread_hnd = curl_thread_t_null;
 
+  OutputDebugStringA(aprintf("::init_resolve_thread"));
+
   if(!init_thread_sync_data(td, hostname, port, hints)) {
     asp->tdata = NULL;
     free(td);
@@ -456,6 +462,7 @@ static bool init_resolve_thread(struct Curl_easy *data,
 
 #ifdef HAVE_GETADDRINFO
   td->thread_hnd = Curl_thread_create(getaddrinfo_thread, &td->tsd);
+  OutputDebugStringA(aprintf("td->thread_hnd: %p", td->thread_hnd));
 #else
   td->thread_hnd = Curl_thread_create(gethostbyname_thread, &td->tsd);
 #endif

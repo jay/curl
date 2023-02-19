@@ -33,6 +33,8 @@
 #elif defined(USE_THREADS_WIN32)
 #  include <process.h>
 #endif
+#include "curl_printf.h"
+
 
 #include "curl_threads.h"
 #include "curl_memory.h"
@@ -117,6 +119,7 @@ curl_thread_t Curl_thread_create(unsigned int (CURL_STDCALL *func) (void *),
   thread_handle = CreateThread(NULL, 0, func, arg, 0, NULL);
 #else
   thread_handle = _beginthreadex(NULL, 0, func, arg, 0, NULL);
+  OutputDebugStringA(aprintf("thread_handle: %p", thread_handle));
 #endif
   t = (curl_thread_t)thread_handle;
   if((t == 0) || (t == LongToHandle(-1L))) {
@@ -126,6 +129,7 @@ curl_thread_t Curl_thread_create(unsigned int (CURL_STDCALL *func) (void *),
               gle == ERROR_NOT_ENOUGH_MEMORY) ?
              EACCES : EINVAL);
 #endif
+    OutputDebugStringA(aprintf("err t: %p", t));
     return curl_thread_t_null;
   }
   return t;
