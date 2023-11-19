@@ -261,8 +261,27 @@ int main(int argc, char *argv[])
   (void)signal(SIGPIPE, SIG_IGN);
 #endif
 
+#if defined(CURLDEBUG) && defined(_CRTDBG_MAP_ALLOC)
+#error "CURLDEBUG and _CRTDBG_MAP_ALLOC both defined, pick one"
+#elif defined(CURLDEBUG)
   /* Initialize memory tracking */
   memory_tracking_init();
+#elif defined(_CRTDBG_MAP_ALLOC)
+#ifndef _INC_CRTDBG
+#error "missing crtdbg.h forced include: cl /FIcrtdbg.h /D_CRTDBG_MAP_ALLOC"
+#endif
+  /* Windows CRT heap memory tracking. on exit it prints heap memory leaks.
+     if libcurl was not built with _CRTDBG_MAP_ALLOC as well then there are no
+     filename or line numbers for libcurl allocations in the leak report. */
+  _CrtSetReportMode(_CRT_WARN, _CRTDBG_MODE_DEBUG | _CRTDBG_MODE_FILE);
+  _CrtSetReportFile(_CRT_WARN, _CRTDBG_FILE_STDERR);
+  _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+#endif
+
+#ifdef CURL_FORCEMEMLEAK
+  /* MEMORY LEAK TEST. See winbuild\README_HEAP_DEBUG.md. */
+  malloc(5);
+#endif
 
   /* Initialize the curl library - do not call any libcurl functions before
      this point */

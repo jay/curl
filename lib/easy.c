@@ -143,8 +143,31 @@ static char *leakpointer;
  */
 static CURLcode global_init(long flags, bool memoryfuncs)
 {
+  /* If _CRTDBG_MAP_ALLOC (Windows CRT heap debugging) is defined then assume
+     we're using malloc -> _malloc_dbg, etc, from CRT's crtdbg.h instead of
+     libcurl's Curl_cmalloc etc.
+     If the user has set memory functions already, they do nothing. Permafail
+     to make it impossible to ignore. */
+#ifdef _CRTDBG_MAP_ALLOC
+  static bool permafail;
+  if(!memoryfuncs)
+    permafail = true;
+  if(permafail) {
+    fputs("Error: Use curl_global_init instead of curl_global_init_mem to "
+          "initialize libcurl. libcurl was built with _CRTDBG_MAP_ALLOC which "
+          "allows the Windows CRT to debug the heap if crtdbg.h was also "
+          "force-included. Custom memory functions can't be set.\n", stderr);
+    return CURLE_FAILED_INIT;
+  }
+#endif /* _CRTDBG_MAP_ALLOC */
+
   if(initialized++)
     return CURLE_OK;
+
+#ifdef CURL_FORCEMEMLEAK
+  /* MEMORY LEAK TEST. See winbuild\README_HEAP_DEBUG.md. */
+  malloc(7);
+#endif
 
   if(memoryfuncs) {
     /* Setup the default memory functions here (again) */

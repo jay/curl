@@ -33,6 +33,34 @@ int main(void)
   CURL *curl;
   CURLcode res;
 
+#if defined(CURLDEBUG) && defined(_CRTDBG_MAP_ALLOC)
+#error "CURLDEBUG and _CRTDBG_MAP_ALLOC both defined, pick one"
+#elif defined(CURLDEBUG)
+  /* libcurl heap memory tracking. run tests/memanalyze.pl <logfile> */
+  {
+    const char *env = getenv("CURL_MEMDEBUG");
+    if(env)
+      curl_dbg_memdebug(env);
+  }
+#elif defined(_CRTDBG_MAP_ALLOC)
+#ifndef _INC_CRTDBG
+#error "missing crtdbg.h forced include: cl /FIcrtdbg.h /D_CRTDBG_MAP_ALLOC"
+#endif
+  /* Windows CRT heap memory tracking. on exit it prints heap memory leaks.
+     if libcurl was not built with _CRTDBG_MAP_ALLOC as well then there are no
+     filename or line numbers for libcurl allocations in the leak report. */
+  _CrtSetReportMode(_CRT_WARN, _CRTDBG_MODE_DEBUG | _CRTDBG_MODE_FILE);
+  _CrtSetReportFile(_CRT_WARN, _CRTDBG_FILE_STDERR);
+  _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+#endif
+
+#ifdef CURL_FORCEMEMLEAK
+  /* MEMORY LEAK TEST. See winbuild\README_HEAP_DEBUG.md. */
+  malloc(5);
+#endif
+
+  curl_global_init(CURL_GLOBAL_DEFAULT);
+
   curl = curl_easy_init();
   if(curl) {
     curl_easy_setopt(curl, CURLOPT_URL, "https://example.com");

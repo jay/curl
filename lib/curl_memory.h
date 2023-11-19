@@ -138,7 +138,15 @@ extern curl_calloc_callback Curl_ccalloc;
 extern curl_wcsdup_callback Curl_cwcsdup;
 #endif
 
-#ifndef CURLDEBUG
+#if defined(_CRTDBG_MAP_ALLOC) && defined(CURLDEBUG)
+#error "CURLDEBUG and _CRTDBG_MAP_ALLOC both defined, pick one"
+#endif
+
+#if defined(_CRTDBG_MAP_ALLOC) && !defined(_INC_CRTDBG)
+#error "missing crtdbg.h forced include: cl /FIcrtdbg.h /D_CRTDBG_MAP_ALLOC"
+#endif
+
+#if !defined(_CRTDBG_MAP_ALLOC) && !defined(CURLDEBUG)
 
 /*
  * libcurl's 'memory tracking' system defines strdup, malloc, calloc,
@@ -174,5 +182,5 @@ extern curl_wcsdup_callback Curl_cwcsdup;
 #  endif
 #endif
 
-#endif /* CURLDEBUG */
+#endif /* !_CRTDBG_MAP_ALLOC && !CURLDEBUG */
 #endif /* HEADER_CURL_MEMORY_H */
