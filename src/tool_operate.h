@@ -81,6 +81,9 @@ struct per_transfer {
 CURLcode operate(struct GlobalConfig *config, int argc, argv_item_t argv[]);
 void single_transfer_cleanup(struct OperationConfig *config);
 
+/* for setting custom file buffer size */
+void tool_set_outstruct_filebuf(struct OutStruct *os);
+
 extern struct per_transfer *transfers; /* first node */
 
 #endif /* HEADER_CURL_TOOL_OPERATE_H */

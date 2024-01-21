@@ -38,6 +38,7 @@
 #include "tool_msgs.h"
 #include "tool_cb_wrt.h"
 #include "tool_operate.h"
+#include "tool_util.h"
 
 #include "memdebug.h" /* keep this as LAST include */
 
@@ -128,6 +129,8 @@ bool tool_create_output_file(struct OutStruct *outs,
   outs->s_isreg = TRUE;
   outs->fopened = TRUE;
   outs->stream = file;
+  tool_set_outstruct_filebuf(outs);
+  outs->timespent_us = 0;
   outs->bytes = 0;
   outs->init = 0;
   return TRUE;
@@ -273,7 +276,9 @@ size_t tool_write_cb(char *buffer, size_t sz, size_t nmemb, void *userdata)
 
         if(MultiByteToWideChar(CP_UTF8, 0, (LPCSTR)outs->utf8seq, -1,
                                prefix, sizeof(prefix)/sizeof(prefix[0]))) {
+          struct timeval before;
           DEBUGASSERT(prefix[2] == L'\0');
+          before = tvnow();
           if(!WriteConsoleW(
               (HANDLE) fhnd,
               prefix,
@@ -282,6 +287,7 @@ size_t tool_write_cb(char *buffer, size_t sz, size_t nmemb, void *userdata)
               NULL)) {
             return CURL_WRITEFUNC_ERROR;
           }
+          outs->timespent_us += tvdiff_us(tvnow(), before);
         }
         /* else: UTF-8 input was not well formed and OS is pre-Vista which
            drops invalid characters instead of writing U+FFFD to output.  */
@@ -317,6 +323,8 @@ size_t tool_write_cb(char *buffer, size_t sz, size_t nmemb, void *userdata)
     }
 
     if(rlen) {
+      struct timeval before;
+
       /* calculate buffer size for wide characters */
       wc_len = MultiByteToWideChar(CP_UTF8, 0, (LPCSTR)rbuf, rlen, NULL, 0);
       if(!wc_len)
@@ -333,6 +341,7 @@ size_t tool_write_cb(char *buffer, size_t sz, size_t nmemb, void *userdata)
         return CURL_WRITEFUNC_ERROR;
       }
 
+      before = tvnow();
       if(!WriteConsoleW(
           (HANDLE) fhnd,
           wc_buf,
@@ -342,6 +351,7 @@ size_t tool_write_cb(char *buffer, size_t sz, size_t nmemb, void *userdata)
         free(wc_buf);
         return CURL_WRITEFUNC_ERROR;
       }
+      outs->timespent_us += tvdiff_us(tvnow(), before);
       free(wc_buf);
     }
 
@@ -349,7 +359,11 @@ size_t tool_write_cb(char *buffer, size_t sz, size_t nmemb, void *userdata)
   }
   else
 #endif
+  {
+    struct timeval before = tvnow();
     rc = fwrite(buffer, sz, nmemb, outs->stream);
+    outs->timespent_us += tvdiff_us(tvnow(), before);
+  }
 
   if(bytes == rc)
     /* we added this amount of data to the output */
@@ -362,7 +376,9 @@ size_t tool_write_cb(char *buffer, size_t sz, size_t nmemb, void *userdata)
 
   if(config->nobuffer) {
     /* output buffering disabled */
+    struct timeval before = tvnow();
     int res = fflush(outs->stream);
+    outs->timespent_us += tvdiff_us(tvnow(), before);
     if(res)
       return CURL_WRITEFUNC_ERROR;
   }

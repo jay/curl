@@ -36,6 +36,7 @@
 #include "tool_cb_wrt.h"
 #include "tool_operate.h"
 #include "tool_libinfo.h"
+#include "tool_util.h"
 
 #include "memdebug.h" /* keep this as LAST include */
 
@@ -98,11 +99,15 @@ size_t tool_header_cb(char *ptr, size_t size, size_t nmemb, void *userdata)
    */
 
   if(per->config->headerfile && heads->stream) {
+    struct timeval before = tvnow();
     size_t rc = fwrite(ptr, size, nmemb, heads->stream);
+    heads->timespent_us += tvdiff_us(tvnow(), before);
     if(rc != cb)
       return rc;
     /* flush the stream to send off what we got earlier */
+    before = tvnow();
     (void)fflush(heads->stream);
+    heads->timespent_us += tvdiff_us(tvnow(), before);
   }
 
   /*
@@ -121,10 +126,12 @@ size_t tool_header_cb(char *ptr, size_t size, size_t nmemb, void *userdata)
 
         if(eot >= etag_h) {
           size_t etag_length = eot - etag_h + 1;
+          struct timeval before = tvnow();
           fwrite(etag_h, size, etag_length, etag_save->stream);
           /* terminate with newline */
           fputc('\n', etag_save->stream);
           (void)fflush(etag_save->stream);
+          etag_save->timespent_us += tvdiff_us(tvnow(), before);
         }
       }
     }
@@ -228,6 +235,7 @@ size_t tool_header_cb(char *ptr, size_t size, size_t nmemb, void *userdata)
       value = memchr(ptr, ':', cb);
     if(value) {
       size_t namelen = value - ptr;
+      struct timeval before = tvnow();
       fprintf(outs->stream, BOLD "%.*s" BOLDOFF ":", (int)namelen, ptr);
 #ifndef LINK
       fwrite(&value[1], cb - namelen - 1, 1, outs->stream);
@@ -239,10 +247,14 @@ size_t tool_header_cb(char *ptr, size_t size, size_t nmemb, void *userdata)
       else
         fwrite(&value[1], cb - namelen - 1, 1, outs->stream);
 #endif
+      outs->timespent_us += tvdiff_us(tvnow(), before);
     }
-    else
+    else {
       /* not "handled", just show it */
+      struct timeval before = tvnow();
       fwrite(ptr, cb, 1, outs->stream);
+      outs->timespent_us += tvdiff_us(tvnow(), before);
+    }
   }
   return cb;
 }

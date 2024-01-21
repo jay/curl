@@ -69,6 +69,9 @@ struct OutStruct {
   bool s_isreg;
   bool fopened;
   FILE *stream;
+  curl_off_t timespent_us; /* time spent in microseconds writing to stream */
+  char *filebuf; /* a big buffer for stream to use */
+  size_t filebuf_size;
   curl_off_t bytes;
   curl_off_t init;
 #ifdef _WIN32

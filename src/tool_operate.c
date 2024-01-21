@@ -206,6 +206,44 @@ struct per_transfer *transfers; /* first node */
 static struct per_transfer *transfersl; /* last node */
 static curl_off_t all_pers;
 
+void tool_set_outstruct_filebuf(struct OutStruct *os)
+{
+  if(!os->stream || !os->fopened) {
+    DEBUGASSERT(0);
+    return;
+  }
+  if(!os->filebuf) {
+    char *env = curlx_getenv("CURL_OUTFILE_BUFSIZE");
+    if(env) {
+      long num;
+      char *endptr;
+      errno = 0;
+      num = strtol(env, &endptr, 10);
+      /* internally setvbuf has a valid range of 2 - INT_MAX */
+      if(errno == ERANGE || endptr == env || *endptr ||
+         num < 2 || num > INT_MAX) {
+        fprintf(tool_stderr,
+                "\n\nUnexpected input for CURL_OUTFILE_BUFSIZE: %s\n",
+                env);
+        exit(1);
+      }
+      os->filebuf_size = (size_t)num;
+      os->filebuf = malloc(os->filebuf_size);
+    }
+  }
+  if(os->filebuf) {
+    if(-1 == setvbuf(os->stream, os->filebuf, _IOFBF, os->filebuf_size)) {
+      fprintf(tool_stderr,
+              "\n\nUnexpected failure of setvbuf set to size %I64d\n",
+              (__int64)os->filebuf_size);
+      exit(1);
+    }
+    fprintf(tool_stderr,
+            "\n\n\nset file buffer size to %I64d for filename %s\n\n",
+            (__int64)os->filebuf_size, os->filename);
+  }
+}
+
 /* add_per_transfer creates a new 'per_transfer' node in the linked
    list of transfers */
 static CURLcode add_per_transfer(struct per_transfer **per)
@@ -418,7 +456,9 @@ static CURLcode post_per_transfer(struct GlobalConfig *global,
     }
   /* Set file extended attributes */
   if(!result && config->xattr && outs->fopened && outs->stream) {
+    struct timeval before = tvnow();
     rc = fwrite_xattr(curl, per->this_url, fileno(outs->stream));
+    outs->timespent_us += tvdiff_us(tvnow(), before);
     if(rc)
       warnf(config->global, "Error setting extended attributes on '%s': %s",
             outs->filename, strerror(errno));
@@ -438,7 +478,9 @@ static CURLcode post_per_transfer(struct GlobalConfig *global,
 
   if(!outs->s_isreg && outs->stream) {
     /* Dump standard stream buffered data */
+    struct timeval before = tvnow();
     rc = fflush(outs->stream);
+    outs->timespent_us += tvdiff_us(tvnow(), before);
     if(!result && rc) {
       /* something went wrong in the writing process */
       result = CURLE_WRITE_ERROR;
@@ -585,11 +627,13 @@ static CURLcode post_per_transfer(struct GlobalConfig *global,
           per->retry_sleep = RETRY_SLEEP_MAX;
       }
       if(outs->bytes && outs->filename && outs->stream) {
+        struct timeval before;
         /* We have written data to an output file, we truncate file
          */
         notef(config->global,
               "Throwing away %"  CURL_FORMAT_CURL_OFF_T " bytes",
               outs->bytes);
+        before = tvnow();
         fflush(outs->stream);
         /* truncate file at the position where we started appending */
 #ifdef HAVE_FTRUNCATE
@@ -609,6 +653,7 @@ static CURLcode post_per_transfer(struct GlobalConfig *global,
            most of those will have ftruncate. */
         rc = fseek(outs->stream, (long)outs->init, SEEK_SET);
 #endif
+        outs->timespent_us += tvdiff_us(tvnow(), before);
         if(rc) {
           errorf(config->global, "Failed seeking to end of file");
           return CURLE_WRITE_ERROR;
@@ -630,7 +675,9 @@ noretry:
 
   /* Close the outs file */
   if(outs->fopened && outs->stream) {
+    struct timeval before = tvnow();
     rc = fclose(outs->stream);
+    outs->timespent_us += tvdiff_us(tvnow(), before);
     if(!result && rc) {
       /* something went wrong in the writing process */
       result = CURLE_WRITE_ERROR;
@@ -650,6 +697,31 @@ noretry:
               outs->filename);
     }
   }
+  else if(outs->stream) {
+    struct timeval before = tvnow();
+    fflush(outs->stream);
+    outs->timespent_us += tvdiff_us(tvnow(), before);
+  }
+
+#define SHOWTIME(x) \
+{ \
+  struct OutStruct *os = x; \
+  if(os->stream) { \
+    fprintf(stderr, "\n\nSpent %" CURL_FORMAT_CURL_OFF_T " seconds " \
+            "(%" CURL_FORMAT_CURL_OFF_T " microseconds) " \
+            "writing to (%s)->filename %s\n", \
+            os->timespent_us/1000000, os->timespent_us, \
+            #x, \
+            (os->stream == stdout ? "stdout" : \
+             os->filename ? os->filename : "(unknown)")); \
+    if(os->fopened && os->filebuf) { \
+      fprintf(stderr, " (NOTE: FILE stream buffer size was %I64d)\n", \
+              (__int64)os->filebuf_size); \
+    } \
+    fprintf(stderr, "\n\n"); \
+  } \
+}
+  SHOWTIME(outs);
 
   /* File time can only be set _after_ the file has been closed */
   if(!result && config->remote_time && outs->s_isreg && outs->filename) {
@@ -664,14 +736,22 @@ noretry:
     ourWriteOut(config, per, result);
 
   /* Close function-local opened file descriptors */
-  if(per->heads.fopened && per->heads.stream)
+  if(per->heads.fopened && per->heads.stream) {
+    struct timeval before = tvnow();
     fclose(per->heads.stream);
+    outs->timespent_us += tvdiff_us(tvnow(), before);
+  }
+  SHOWTIME(&per->heads);
 
   if(per->heads.alloc_filename)
     Curl_safefree(per->heads.filename);
 
-  if(per->etag_save.fopened && per->etag_save.stream)
+  if(per->etag_save.fopened && per->etag_save.stream) {
+    struct timeval before = tvnow();
     fclose(per->etag_save.stream);
+    outs->timespent_us += tvdiff_us(tvnow(), before);
+  }
+  SHOWTIME(&per->etag_save);
 
   if(per->etag_save.alloc_filename)
     Curl_safefree(per->etag_save.filename);
@@ -877,6 +957,7 @@ static CURLcode single_transfer(struct GlobalConfig *global,
         memset(&etag_first, 0, sizeof(etag_first));
         etag_save = &etag_first;
         etag_save->stream = stdout;
+        etag_save->timespent_us = 0;
 
         /* --etag-compare */
         if(config->etag_compare_file) {
@@ -938,6 +1019,8 @@ static CURLcode single_transfer(struct GlobalConfig *global,
               etag_save->s_isreg = TRUE;
               etag_save->fopened = TRUE;
               etag_save->stream = newfile;
+              tool_set_outstruct_filebuf(etag_save);
+              etag_save->timespent_us = 0;
             }
           }
           else {
@@ -953,8 +1036,12 @@ static CURLcode single_transfer(struct GlobalConfig *global,
           result = CURLE_OUT_OF_MEMORY;
         if(result) {
           curl_easy_cleanup(curl);
-          if(etag_save->fopened)
+          if(etag_save->fopened) {
+            struct timeval before = tvnow();
             fclose(etag_save->stream);
+            etag_save->timespent_us += tvdiff_us(tvnow(), before);
+          }
+          SHOWTIME(etag_save);
           break;
         }
         per->etag_save = etag_first; /* copy the whole struct */
@@ -980,6 +1067,7 @@ static CURLcode single_transfer(struct GlobalConfig *global,
         /* default headers output stream is stdout */
         heads = &per->heads;
         heads->stream = stdout;
+        heads->timespent_us = 0;
 
         /* Single header file for all URLs */
         if(config->headerfile) {
@@ -1013,6 +1101,8 @@ static CURLcode single_transfer(struct GlobalConfig *global,
               heads->s_isreg = TRUE;
               heads->fopened = TRUE;
               heads->stream = newfile;
+              tool_set_outstruct_filebuf(heads);
+              heads->timespent_us = 0;
             }
           }
           else {
@@ -1031,6 +1121,7 @@ static CURLcode single_transfer(struct GlobalConfig *global,
 
         /* default output stream is stdout */
         outs->stream = stdout;
+        outs->timespent_us = 0;
 
         if(state->urls) {
           result = glob_next_url(&per->this_url, state->urls);
@@ -1151,10 +1242,13 @@ static CURLcode single_transfer(struct GlobalConfig *global,
             }
             outs->fopened = TRUE;
             outs->stream = file;
+            tool_set_outstruct_filebuf(outs);
+            outs->timespent_us = 0;
             outs->init = config->resume_from;
           }
           else {
             outs->stream = NULL; /* open when needed */
+            outs->timespent_us = 0;
           }
           outs->filename = per->outfile;
           outs->s_isreg = TRUE;

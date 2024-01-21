@@ -136,6 +136,20 @@ long tvdiff(struct timeval newer, struct timeval older)
     (long)(newer.tv_usec-older.tv_usec)/1000;
 }
 
+/*
+ * Returns: time difference in number of microseconds. For too large diffs it
+ * returns max value.
+ */
+curl_off_t tvdiff_us(struct timeval newer, struct timeval older)
+{
+  curl_off_t diff = (curl_off_t)newer.tv_sec-older.tv_sec;
+  if(diff >= (CURL_OFF_T_MAX/1000000))
+    return CURL_OFF_T_MAX;
+  else if(diff <= (CURL_OFF_T_MIN/1000000))
+    return CURL_OFF_T_MIN;
+  return diff * 1000000 + newer.tv_usec-older.tv_usec;
+}
+
 /* Case insensitive compare. Accept NULL pointers. */
 int struplocompare(const char *p1, const char *p2)
 {
