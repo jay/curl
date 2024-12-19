@@ -59,6 +59,8 @@ mkinstalldirs
 tags
 test-driver
 scripts/_curl
+scripts/ca-bundle.crt
+scripts/certdata.txt
 scripts/curl.fish
 curl_fuzzer
 curl_fuzzer_seed_corpus.zip
