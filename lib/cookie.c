@@ -842,7 +842,7 @@ parse_netscape(struct Cookie *co,
   for(next = lineptr; next; fields++) {
     ptr = next;
     len = strcspn(ptr, "\t\r\n");
-    next = (ptr[len] == '\t' ? &ptr[len+1] : NULL);
+    next = (ptr[len] == '\t' ? &ptr[len + 1] : NULL);
     switch(fields) {
     case 0:
       if(ptr[0]=='.') { /* skip preceding dots */
