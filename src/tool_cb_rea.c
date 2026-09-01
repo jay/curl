@@ -107,6 +107,26 @@ size_t tool_read_cb(char *buffer, size_t sz, size_t nmemb, void *userdata)
   if(per->uploadfile && !strcmp(per->uploadfile, ".") && per->infd > 0) {
 #ifndef CURL_WINDOWS_UWP
     rc = sread(per->infd, buffer, curlx_uztosi(sz * nmemb));
+    /* wait a very short time for data on stdin (less cpu usage this way?) */
+    if(rc < 0 && SOCK_EAGAIN(SOCKERRNO)) {
+      fd_set fdread;
+      int waitms = 25;
+      struct timeval timeout;
+
+      timeout.tv_sec = waitms / 1000;
+      timeout.tv_usec = (int)((waitms % 1000) * 1000);
+
+      FD_ZERO(&fdread);
+      FD_SET((SOCKET)per->infd, &fdread);
+
+      rc = select(0, &fdread, NULL, NULL, &timeout);
+      if(rc > 0)
+        rc = sread(per->infd, buffer, curlx_uztosi(sz * nmemb));
+      else if(rc == 0) {
+        rc = -1;
+        SET_SOCKERRNO(SOCKEWOULDBLOCK);
+      }
+    }
     if(rc < 0) {
       if(SOCK_EAGAIN(SOCKERRNO)) {
         errno = 0;
@@ -125,6 +145,14 @@ size_t tool_read_cb(char *buffer, size_t sz, size_t nmemb, void *userdata)
 #endif /* _WIN32 */
   {
     rc = read(per->infd, buffer, sz * nmemb);
+#ifndef _WIN32
+    /* wait a very short time for data on stdin (less cpu usage this way?) */
+    if(rc < 0 && errno == EAGAIN && per->uploadfile &&
+       !strcmp(per->uploadfile, ".") && per->infd == 0) {
+      waitfd(25, per->infd);
+      rc = read(per->infd, buffer, sz * nmemb);
+    }
+#endif
     if(rc < 0) {
       if(errno == EAGAIN) {
         errno = 0;
